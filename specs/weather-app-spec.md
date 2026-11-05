@@ -11,7 +11,7 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 - **RF1 — Busca e seleção de cidade:** apresentar um estado inicial com busca manual; permitir pesquisar cidades, mostrar resultados com nome da cidade e país e, quando disponível, estado/região, e selecionar o local cujos dados serão consultados. Normalizar acentos e diferenças entre maiúsculas e minúsculas para a busca sem remover pontuação válida do nome.
 - **RF2 — Condições atuais:** após a seleção de uma cidade, exibir temperatura, descrição da condição meteorológica, umidade relativa (%), velocidade do vento (km/h), pressão (hPa) e precipitação atual (mm), usando os valores e a semântica fornecidos pelo Open-Meteo. Indicar como indisponível qualquer métrica ausente.
 - **RF3 — Previsão de cinco dias:** exibir cinco posições de calendário consecutivas no fuso local da cidade selecionada, começando hoje e incluindo os quatro dias seguintes. Para cada dia, exibir temperatura mínima e máxima, condição meteorológica e probabilidade máxima de precipitação (%); indicar dados indisponíveis sem omitir a posição daquele dia.
-- **RF4 — Unidade de temperatura:** permitir alternar entre Celsius e Fahrenheit e atualizar todos os valores e rótulos de temperatura apresentados, tanto nas condições atuais quanto na previsão.
+- **RF4 — Unidade de temperatura:** permitir alternar entre Celsius e Fahrenheit e atualizar todos os valores e rótulos de temperatura apresentados, tanto nas condições atuais quanto na previsão. Converter por $°F = (°C × 9/5) + 32$ e $°C = (°F − 32) × 5/9$.
 - **RF5 — Estados e recuperação:** informar à pessoa quando uma busca ou consulta estiver carregando, quando não houver resultados e quando uma busca ou consulta meteorológica falhar; oferecer nova tentativa correspondente quando houver falha ou timeout.
 - **RF6 — Referência temporal:** apresentar a data e o horário local de referência das condições atuais, incluindo o deslocamento UTC do fuso da cidade. Se a observação tiver mais de 60 minutos no momento da resposta, identificá-la como desatualizada e não apresentá-la como atual.
 
@@ -102,9 +102,9 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 	- **When** a pessoa alterna a unidade de temperatura
 	- **Then** os valores são atualizados na interface sem uma nova requisição meteorológica
 - **Cenário RF4.4 — Precisão de exibição**
-	- **Given** a temperatura convertida resulta em 18,6 °C, 65,48 °F ou em um valor terminado em 0,5
+	- **Given** uma temperatura de origem de 18,6 °C, cuja conversão resulta em 65,48 °F, ou um valor terminado em 0,5
 	- **When** a temperatura é apresentada
-	- **Then** o valor é arredondado para o inteiro mais próximo, com empates afastados de zero; 18,6 °C resulta em 19 °C, 65,48 °F em 65 °F, 18,5 em 19 e -2,5 em -3
+	- **Then** o valor é arredondado para o inteiro mais próximo, com empates afastados de zero; 18,6 °C resulta em 19 °C, 18,6 °C convertido em Fahrenheit resulta em 65 °F, 18,5 resulta em 19 e -2,5 resulta em -3
 
 **RF5 — Estados e recuperação**
 
@@ -151,11 +151,11 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 ## Non-Functional Requirements
 
 - **RNF1 — Responsividade:** os fluxos de busca, seleção, consulta e alternância de unidade devem funcionar em larguras de tela de 320 px até desktop, sem rolagem horizontal nem perda de conteúdo ou controles.
-- **RNF2 — Usabilidade:** em teste moderado com pelo menos cinco participantes representando as personas, ao menos quatro devem encontrar uma cidade e identificar suas condições atuais em até 30 segundos, sem ajuda. Ao menos quatro também devem identificar os cinco dias da previsão e alternar a unidade sem ajuda.
+- **RNF2 — Usabilidade:** em teste moderado com pelo menos cinco participantes representando as personas, ao menos quatro devem encontrar uma cidade e identificar suas condições atuais em até 30 segundos, sem ajuda; ao menos quatro também devem identificar os cinco dias da previsão e alternar a unidade em até 60 segundos, sem ajuda.
 - **RNF3 — Consistência de unidades:** todos os valores de temperatura simultaneamente visíveis devem corresponder à unidade selecionada.
 - **RNF4 — Performance:** em conexão de teste de 10 Mbps de download, 2 Mbps de upload e latência de 100 ms, com o Open-Meteo respondendo, pelo menos 95% das buscas devem apresentar resultados em até 3 segundos após o envio, e pelo menos 95% das consultas devem apresentar condições atuais e as cinco posições da previsão em até 3 segundos após a seleção da cidade.
 - **RNF5 — Acessibilidade:** os fluxos principais devem atender WCAG 2.2 nível AA, incluindo operação por teclado, foco visível, nomes acessíveis e contraste adequado; conformidade deve ser verificada por análise automatizada e revisão manual de teclado e leitor de tela.
-- **RNF6 — Disponibilidade e resiliência:** a disponibilidade mensal do fluxo de consulta deve ser de pelo menos 99,5%, medida por verificações sintéticas a cada cinco minutos que carregam a aplicação e solicitam dados meteorológicos. Falhas do Open-Meteo contam como falhas do fluxo; erros devem encerrar o carregamento e permitir nova tentativa.
+- **RNF6 — Disponibilidade e resiliência:** a disponibilidade mensal do fluxo de consulta deve ser de pelo menos 99,5%, medida por verificações sintéticas a cada cinco minutos que carregam a aplicação e solicitam condições atuais e cinco dias de previsão para São Paulo, Brasil. Uma verificação é bem-sucedida somente se os dados forem apresentados em até 10 segundos; falhas do Open-Meteo contam como falhas do fluxo. Erros devem encerrar o carregamento e permitir nova tentativa.
 - **RNF7 — Compatibilidade:** suportar as versões estáveis atual e imediatamente anterior, na data de cada ciclo de teste, de Chrome, Edge, Firefox, Safari para desktop, Safari para iOS e Chrome para Android.
 - **RNF8 — Atualidade dos dados:** condições atuais com referência anterior em mais de 60 minutos ao recebimento da resposta devem ser identificadas como desatualizadas e não podem ser rotuladas apenas como atuais.
 - **RNF9 — Privacidade:** não exigir conta nem persistir dados em servidor. Não solicitar localização do dispositivo nem coletar localização ou histórico de buscas sem decisão de produto e comunicação apropriadas.
