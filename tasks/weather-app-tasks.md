@@ -1,335 +1,437 @@
 # Backlog de Tarefas — Weather App
 
-As tarefas derivam de `plans/weather-app-plan.md`. Cada item tem foco testável, tipo único e no máximo dois arquivos principais. Dependências apontam para tarefas anteriores; atividades sem dependências entre si podem ocorrer em paralelo.
+Backlog derivado de `plans/weather-app-plan.md` e rastreado à spec. A ordem das entregas segue: tipos → funções puras → services → hook → componentes → integração → testes → hardening. Dependências sempre apontam para tarefas anteriores; tarefas independentes podem ocorrer em paralelo.
 
-## Entrega 1 — Contratos e funções puras
+## Entrega 1 — Tipos
 
 ### T-01 — Definir os tipos de domínio
-- **Descrição:** declarar contratos TypeScript compartilhados, com temperaturas internas em Celsius e dados ausentes em `null`.
+- **Descrição:** declarar contratos compartilhados com temperaturas em Celsius e dados ausentes em `null`.
 - **Critérios de aceite:**
   - Existem `City`, `CurrentWeather`, `ForecastDay`, `WeatherData` e `TemperatureUnit` (`'celsius' | 'fahrenheit'`).
-  - `WeatherData` inclui fuso, deslocamento UTC, instante de recebimento e previsão de cinco posições.
-  - A verificação TypeScript passa em modo strict.
+  - `WeatherData` contém fuso, deslocamento UTC, instante de recebimento e previsão de cinco posições.
+  - `pnpm build` termina sem erros TypeScript strict.
 - **Dependências:** Nenhuma.
 - **Arquivos prováveis:** `src/types/weather.ts`.
 - **Tipo:** Data.
 
+## Entrega 2 — Funções puras
+
 ### T-02 — Implementar conversão de temperatura
-- **Descrição:** implementar conversão e formatação de temperatura a partir de Celsius.
+- **Descrição:** converter e formatar Celsius/Fahrenheit sem estado ou I/O.
 - **Critérios de aceite:**
-  - Conversões C/F seguem as fórmulas da spec.
-  - O resultado é arredondado para inteiro, com empates afastados de zero.
-  - A função é pura e não armazena valores convertidos.
+  - `0 °C` resulta em `32 °F` e `32 °F` em `0 °C`.
+  - `18,6 °C` convertido para Fahrenheit é exibido como `65 °F`.
+  - Empates arredondam para longe de zero: `18,5` para `19`, `-2,5` para `-3`.
 - **Dependências:** T-01.
 - **Arquivos prováveis:** `src/lib/temperature.ts`.
 - **Tipo:** Data.
 
-### T-03 — Implementar formatação de datas e códigos WMO
-- **Descrição:** adicionar formatação de data local e mapeamento de condições meteorológicas.
+### T-03 — Implementar formatação de datas locais
+- **Descrição:** formatar as datas da previsão sem conversão pelo fuso do dispositivo.
 - **Critérios de aceite:**
-  - Datas usam “Hoje”, “Amanhã” e `DD MMM` em pt-BR sem aplicar o fuso do dispositivo.
-  - Códigos WMO suportados retornam descrição em pt-BR; desconhecidos retornam fallback.
+  - Datas usam “Hoje”, “Amanhã” e `DD MMM` em pt-BR.
+  - `2026-11-12` resulta em `12 Nov` independentemente do fuso do processo.
 - **Dependências:** T-01.
-- **Arquivos prováveis:** `src/lib/format.ts`, `src/lib/weatherCodes.ts`.
+- **Arquivos prováveis:** `src/lib/format.ts`.
 - **Tipo:** Data.
 
-### T-04 — Testar conversão de temperatura
-- **Descrição:** cobrir conversões C/F e regra de arredondamento.
+### T-04 — Implementar mapeamento de códigos WMO
+- **Descrição:** converter códigos meteorológicos para rótulos pt-BR com fallback.
 - **Critérios de aceite:**
-  - Testa ambas as direções, temperaturas negativas e valores terminados em 0,5.
-  - Empates positivos e negativos arredondam para longe de zero.
-- **Dependências:** T-02.
-- **Arquivos prováveis:** `tests/unit/temperature.test.ts`.
-- **Tipo:** Test.
+  - Código `0` resulta em “Céu limpo”.
+  - Código não mapeado resulta em “Condição desconhecida” sem lançar erro.
+- **Dependências:** T-01.
+- **Arquivos prováveis:** `src/lib/weatherCodes.ts`.
+- **Tipo:** Data.
 
-### T-05 — Testar datas e códigos meteorológicos
-- **Descrição:** cobrir rótulos locais, limites de calendário e fallback WMO.
-- **Critérios de aceite:**
-  - Testa Hoje, Amanhã, mudança de mês/ano e abreviação de mês em pt-BR.
-  - Testa código WMO conhecido e desconhecido.
-- **Dependências:** T-03.
-- **Arquivos prováveis:** `tests/unit/format.test.ts`, `tests/unit/weatherCodes.test.ts`.
-- **Tipo:** Test.
+## Entrega 3 — Services
 
-## Entrega 2 — Integração Open-Meteo
-
-### T-06 — Implementar serviço de geocoding
+### T-05 — Implementar busca de geocoding
 - **Descrição:** consultar o endpoint de busca e mapear até cinco resultados para `City`.
 - **Critérios de aceite:**
   - Envia termo normalizado, `count=5`, `language=pt` e `format=json`.
   - Mapeia ID, nome, país, região, latitude e longitude; campos geográficos ausentes ficam `null`.
-  - Resultado vazio é distinto de falha HTTP, rede, JSON ou timeout.
-  - A chamada expira após 10 segundos.
+  - Busca válida sem resultados retorna lista vazia; falha HTTP/rede/JSON/timeout retorna erro.
+  - Timeout ocorre aos 10 segundos.
 - **Dependências:** T-01.
 - **Arquivos prováveis:** `src/services/weatherService.ts`.
 - **Tipo:** Data.
 
-### T-07 — Implementar serviço de forecast
-- **Descrição:** consultar condições atuais e previsão diária e mapear a resposta para `WeatherData`.
+### T-06 — Implementar consulta de forecast
+- **Descrição:** consultar condições atuais e cinco dias e mapear para `WeatherData`.
 - **Critérios de aceite:**
-  - Envia `current`, `daily`, `forecast_days=5`, coordenadas, unidades e `timezone=auto` definidos no plano.
-  - Mapeia arrays pelo mesmo índice e mantém cinco datas no fuso local.
-  - Métricas ausentes ficam `null`; envelope `current`/`daily` ausente ou resposta inválida gera erro recuperável.
-  - Captura fuso, deslocamento UTC e `receivedAt`; timeout de 10 segundos.
-- **Dependências:** T-01, T-03, T-06.
+  - Envia os campos `current`, `daily`, coordenadas, `forecast_days=5`, `timezone=auto` e unidades definidas no plano.
+  - Mantém exatamente cinco posições, mapeando todos os arrays diários pelo mesmo índice.
+  - Métricas ausentes ficam `null`; envelope `current`/`daily` ausente gera erro recuperável.
+  - Captura fuso, deslocamento UTC e `receivedAt`; timeout ocorre aos 10 segundos.
+- **Dependências:** T-01, T-03, T-05.
 - **Arquivos prováveis:** `src/services/weatherService.ts`.
 - **Tipo:** Data.
 
-### T-08 — Testar contratos dos serviços
-- **Descrição:** testar os dois endpoints com `fetch` controlado, sem depender da rede pública.
-- **Critérios de aceite:**
-  - Geocoding cobre zero, um e múltiplos resultados, normalização e campos ausentes.
-  - Forecast cobre mapeamento, cinco posições, valores parciais, fuso e unidades.
-  - HTTP, rede, JSON inválido, timeout e envelope inválido não são confundidos com resultado vazio.
-- **Dependências:** T-06, T-07.
-- **Arquivos prováveis:** `tests/unit/weatherService.test.ts`.
-- **Tipo:** Test.
+## Entrega 4 — Hook de orquestração
 
-## Entrega 3 — Componentes e fluxo principal
-
-### T-09 — Implementar estado inicial e vazio
-- **Descrição:** apresentar orientação inicial e estado de busca sem resultados.
+### T-07 — Implementar hook de clima
+- **Descrição:** coordenar geocoding, seleção, forecast, retry e status do fluxo.
 - **Critérios de aceite:**
-  - Estado inicial orienta a busca manual, sem dados meteorológicos ou solicitação de geolocalização.
-  - Busca sem correspondência mostra mensagem distinta de erro.
-- **Dependências:** Nenhuma.
-- **Arquivos prováveis:** `src/components/states/EmptyState.tsx`.
-- **Tipo:** UI.
-
-### T-10 — Implementar estados de carregamento e erro
-- **Descrição:** apresentar progresso e falha recuperável com ação de retry.
-- **Critérios de aceite:**
-  - Loading é perceptível.
-  - Erro recebe mensagem e callback de retry sem expor detalhes técnicos.
-  - Os estados são nomeados e operáveis por teclado.
-- **Dependências:** Nenhuma.
-- **Arquivos prováveis:** `src/components/states/LoadingState.tsx`, `src/components/states/ErrorState.tsx`.
-- **Tipo:** UI.
-
-### T-11 — Implementar formulário de busca
-- **Descrição:** permitir envio explícito de um nome de cidade.
-- **Critérios de aceite:**
-  - Campo vazio/espaços não dispara busca e informa o que falta.
-  - Busca inicia somente no envio, sem sugestões enquanto digita.
-  - Formulário tem label acessível e funciona por teclado.
-- **Dependências:** Nenhuma.
-- **Arquivos prováveis:** `src/components/SearchBar.tsx`.
-- **Tipo:** UI.
-
-### T-12 — Implementar lista de cidades
-- **Descrição:** apresentar resultados de geocoding para escolha explícita quando houver múltiplas cidades.
-- **Critérios de aceite:**
-  - Cada resultado mostra cidade, país e região quando disponíveis.
-  - Cada opção pode ser selecionada por mouse ou teclado.
-  - A lista suporta até cinco resultados.
-- **Dependências:** T-01.
-- **Arquivos prováveis:** `src/components/CityResults.tsx`.
-- **Tipo:** UI.
-
-### T-13 — Implementar hook de orquestração
-- **Descrição:** controlar busca, seleção, consulta, retry e os estados `idle`, `loading`, `success`, `error` e `empty`.
-- **Critérios de aceite:**
-  - Zero resultados produz `empty`; um resultado inicia forecast; múltiplos aguardam seleção.
-  - Erros preservam termo ou cidade para retry manual da mesma operação.
-  - Resposta obsoleta não substitui dados da cidade mais recente.
-- **Dependências:** T-01, T-06, T-07.
+  - Busca vazia não chama service; zero resultados vai para `empty`; um resultado inicia forecast; múltiplos aguardam seleção.
+  - Estados são `idle`, `loading`, `success`, `error` e `empty`.
+  - Erro preserva termo/cidade para retry manual da mesma operação.
+  - Resposta fora de ordem não substitui os dados da cidade selecionada mais recentemente.
+- **Dependências:** T-01, T-05, T-06.
 - **Arquivos prováveis:** `src/hooks/useWeather.ts`.
 - **Tipo:** UI.
 
-### T-14 — Implementar componente de condições atuais
-- **Descrição:** apresentar dados atuais e referência temporal da cidade selecionada.
+## Entrega 5 — Componentes
+
+### T-08 — Implementar estado inicial e vazio
+- **Descrição:** apresentar a orientação inicial e o resultado de geocoding sem correspondências.
 - **Critérios de aceite:**
-  - Exibe temperatura, descrição, umidade, vento, pressão e precipitação com unidades definidas.
-  - Campos ausentes aparecem como indisponíveis.
-  - Exibe horário/fuso e sinaliza dados acima de 60 minutos como desatualizados.
-- **Dependências:** T-01, T-02, T-03.
+  - Estado inicial orienta a busca sem dados meteorológicos ou geolocalização.
+  - Estado vazio informa “Nenhuma cidade encontrada” e não é anunciado como erro.
+- **Dependências:** T-07.
+- **Arquivos prováveis:** `src/components/states/EmptyState.tsx`.
+- **Tipo:** UI.
+
+### T-09 — Implementar estados de loading e erro
+- **Descrição:** exibir progresso e falha recuperável com retry.
+- **Critérios de aceite:**
+  - Loading usa `role="status"` enquanto a operação está pendente e desaparece ao concluir.
+  - Erro usa `role="alert"`; o botão retry chama o callback uma vez.
+  - Stack trace e URLs de API não são renderizados.
+- **Dependências:** T-07.
+- **Arquivos prováveis:** `src/components/states/LoadingState.tsx`, `src/components/states/ErrorState.tsx`.
+- **Tipo:** UI.
+
+### T-10 — Implementar formulário de busca
+- **Descrição:** permitir envio explícito de um nome de cidade.
+- **Critérios de aceite:**
+  - Campo vazio/espaços não chama `onSearch` e mostra “É necessário digitar o nome de uma cidade”.
+  - Digitar não chama `onSearch`; enviar termo não vazio chama uma vez com espaços externos removidos.
+  - Label acessível e envio por teclado estão presentes.
+- **Dependências:** T-07.
+- **Arquivos prováveis:** `src/components/SearchBar.tsx`.
+- **Tipo:** UI.
+
+### T-11 — Implementar lista de cidades
+- **Descrição:** renderizar e permitir seleção de resultados múltiplos.
+- **Critérios de aceite:**
+  - Dois a cinco resultados exibem cidade, país e região quando disponíveis.
+  - Selecionar opção chama `onSelect` uma vez com a cidade correspondente.
+  - Seleção é possível por teclado; não há forecast antes da escolha.
+- **Dependências:** T-01, T-07.
+- **Arquivos prováveis:** `src/components/CityResults.tsx`.
+- **Tipo:** UI.
+
+### T-12 — Implementar componente de condições atuais
+- **Descrição:** apresentar métricas atuais e referência temporal.
+- **Critérios de aceite:**
+  - Renderiza temperatura, condição, umidade (%), vento (km/h), pressão (hPa) e precipitação (mm) conforme props.
+  - Campo `null` mostra placeholder de indisponível e não oculta os demais.
+  - Idade acima de 60 minutos mostra “Desatualizado”; referência ausente marca atualidade não confirmada.
+- **Dependências:** T-01, T-02, T-03, T-04.
 - **Arquivos prováveis:** `src/components/CurrentWeather.tsx`.
 - **Tipo:** UI.
 
-### T-15 — Implementar componentes da previsão
-- **Descrição:** apresentar as cinco datas e suas métricas diárias.
+### T-13 — Implementar componentes da previsão
+- **Descrição:** apresentar as datas e métricas dos cinco dias.
 - **Critérios de aceite:**
-  - Exibe cinco posições no fuso local, com mín/máx, condição e probabilidade de precipitação.
-  - Dia ou campo ausente mantém a posição e indica dado indisponível.
-  - Datas usam formato pt-BR e temperaturas recebem a unidade por prop.
-- **Dependências:** T-01, T-02, T-03.
+  - Renderiza exatamente cinco posições na ordem local, com mín/máx, condição e probabilidade (%).
+  - Dia/campo ausente mantém posição e mostra placeholder.
+  - Prop Celsius/Fahrenheit altera apenas valores/rótulos de temperatura.
+- **Dependências:** T-01, T-02, T-03, T-04.
 - **Arquivos prováveis:** `src/components/ForecastList.tsx`, `src/components/ForecastCard.tsx`.
 - **Tipo:** UI.
 
-### T-16 — Implementar controle de unidade
-- **Descrição:** permitir alternar entre Celsius e Fahrenheit.
+### T-14 — Implementar controle de unidade
+- **Descrição:** expor a alternância entre Celsius e Fahrenheit.
 - **Critérios de aceite:**
-  - Controle expõe C/F e tem nome acessível.
-  - Mudança de opção chama o callback recebido; o componente não armazena temperaturas convertidas.
-- **Dependências:** T-01.
+  - Oferece somente Celsius e Fahrenheit e tem nome acessível.
+  - Selecionar cada opção chama callback uma vez com o valor correspondente.
+- **Dependências:** T-01, T-07.
 - **Arquivos prováveis:** `src/components/UnitToggle.tsx`.
 - **Tipo:** UI.
 
-### T-17 — Compor fluxo no App
+## Entrega 6 — Integração
+
+### T-15 — Compor a aplicação no App
 - **Descrição:** conectar busca, estados, seleção, hook, clima, previsão e estado local da unidade.
 - **Critérios de aceite:**
-  - Estados inicial, loading, empty, error e resultado são alcançáveis.
-  - Resultado único é selecionado automaticamente; múltiplos exigem escolha.
-  - Unidade começa em Celsius e é propagada aos componentes.
-  - Não há geolocalização nem persistência de preferências na v1.
-- **Dependências:** T-09 a T-16.
+  - Os status idle/loading/empty/error/success exibem a view correspondente.
+  - Um resultado seleciona a cidade automaticamente; múltiplos aguardam escolha.
+  - Unidade inicial é Celsius; alterná-la atualiza props sem nova chamada a `getWeather`.
+  - Abrir o app não chama geolocalização nem persiste preferências.
+- **Dependências:** T-08 a T-14.
 - **Arquivos prováveis:** `src/App.tsx`.
 - **Tipo:** UI.
 
-## Entrega 4 — Testes por unidade de responsabilidade
+## Entrega 7 — Testes
 
-### T-18 — Testar componentes de estado
-- **Descrição:** verificar estado inicial, vazio, carregamento e erro.
+### T-16 — Testar conversão de temperatura
+- **Descrição:** verificar conversões e regra de arredondamento.
 - **Critérios de aceite:**
-  - Testes distinguem `empty` de `error`.
-  - Retry dispara o callback fornecido; loading e labels são encontráveis por roles/nomes acessíveis.
-- **Dependências:** T-09, T-10.
+  - Testes cobrem C→F, F→C, temperaturas negativas e valores terminados em 0,5.
+  - Empates positivos/negativos arredondam para longe de zero.
+  - `pnpm test -- temperature.test.ts` passa.
+- **Dependências:** T-02.
+- **Arquivos prováveis:** `tests/unit/temperature.test.ts`.
+- **Tipo:** Test.
+
+### T-17 — Testar datas e códigos WMO
+- **Descrição:** verificar datas locais e fallback meteorológico.
+- **Critérios de aceite:**
+  - Testa Hoje, Amanhã, transição mês/ano e `2026-11-12` → `12 Nov` em fusos diferentes.
+  - Testa WMO `0` → “Céu limpo” e WMO `-1` → “Condição desconhecida”.
+  - Os testes de format e weather codes passam sem rede.
+- **Dependências:** T-03, T-04.
+- **Arquivos prováveis:** `tests/unit/format.test.ts`, `tests/unit/weatherCodes.test.ts`.
+- **Tipo:** Test.
+
+### T-18 — Testar contratos dos serviços
+- **Descrição:** testar endpoints com `fetch` controlado, sem rede pública.
+- **Critérios de aceite:**
+  - Geocoding cobre zero/um/múltiplos resultados, normalização e campos ausentes.
+  - Forecast cobre arrays, cinco posições, nulls, fuso e unidades.
+  - HTTP/rede/JSON/timeout/envelope inválido são distinguíveis de resultados vazios.
+  - Fake timers confirmam timeout em 10.000 ms.
+- **Dependências:** T-05, T-06.
+- **Arquivos prováveis:** `tests/unit/weatherService.test.ts`.
+- **Tipo:** Test.
+
+### T-19 — Testar componentes de estado
+- **Descrição:** verificar estados inicial, vazio, loading e erro.
+- **Critérios de aceite:**
+  - Asserções por role encontram estado vazio, `role=status` e `role=alert` nos cenários correspondentes.
+  - Retry aciona o callback uma vez e é operável por teclado.
+- **Dependências:** T-08, T-09.
 - **Arquivos prováveis:** `tests/unit/states.test.tsx`.
 - **Tipo:** Test.
 
-### T-19 — Testar formulário e seleção de cidades
-- **Descrição:** cobrir busca e interação com a lista de resultados.
+### T-20 — Testar busca e seleção de cidades
+- **Descrição:** cobrir formulário e lista de resultados.
 - **Critérios de aceite:**
-  - Busca vazia não chama callback; envio com termo válido chama uma vez.
-  - Resultados exibem contexto geográfico e seleção funciona por teclado.
-- **Dependências:** T-11, T-12.
+  - Campo vazio não chama `onSearch`; envio válido chama uma vez com valor trimado.
+  - Resultados exibem país/região; teclado seleciona exatamente a cidade ativada.
+- **Dependências:** T-10, T-11.
 - **Arquivos prováveis:** `tests/unit/SearchBar.test.tsx`, `tests/unit/CityResults.test.tsx`.
 - **Tipo:** Test.
 
-### T-20 — Testar hook e transições de estado
-- **Descrição:** validar a orquestração usando serviços mockados.
+### T-21 — Testar hook e transições de estado
+- **Descrição:** verificar orquestração com services mockados.
 - **Critérios de aceite:**
-  - Testa zero/um/múltiplos resultados, seleção, erro e retry com contexto preservado.
-  - Resposta antiga não substitui a cidade mais recente.
-- **Dependências:** T-13.
+  - Testa empty, success/search, loading/weather, success/weather e error.
+  - Retry de busca preserva query; retry de forecast preserva City.
+  - Duas promises resolvidas fora de ordem mantêm a cidade mais recente.
+- **Dependências:** T-07.
 - **Arquivos prováveis:** `tests/unit/useWeather.test.ts`.
 - **Tipo:** Test.
 
-### T-21 — Testar apresentação meteorológica
-- **Descrição:** verificar renderização de condições atuais e previsão com dados completos/parciais.
+### T-22 — Testar apresentação meteorológica
+- **Descrição:** verificar componentes de clima atual e forecast.
 - **Critérios de aceite:**
-  - Unidades e campos correspondem aos valores recebidos.
-  - Campos ausentes aparecem indisponíveis sem remover outros dados/dias.
-  - Dados antigos mostram a indicação desatualizada.
-- **Dependências:** T-14, T-15.
+  - Fixtures confirmam unidades e cinco posições renderizadas.
+  - Campos null são indisponíveis e valores presentes continuam visíveis.
+  - Observações de 59 e 61 minutos verificam, respectivamente, ausência e presença do aviso de desatualizado.
+- **Dependências:** T-12, T-13.
 - **Arquivos prováveis:** `tests/unit/WeatherDisplay.test.tsx`.
 - **Tipo:** Test.
 
-### T-22 — Testar App e alternância de unidade
-- **Descrição:** validar a integração da tela e a conversão derivada na renderização.
+### T-23 — Testar controle de unidade
+- **Descrição:** verificar opções e callback do UnitToggle.
 - **Critérios de aceite:**
-  - Unidade inicial é Celsius; alternar atualiza valores e rótulos visíveis.
-  - Alternar unidade não invoca novamente o serviço de forecast.
-  - Fluxo inicial e retry chegam aos componentes corretos.
-- **Dependências:** T-16, T-17.
-- **Arquivos prováveis:** `tests/unit/App.test.tsx`, `tests/unit/UnitToggle.test.tsx`.
+  - As opções são Celsius e Fahrenheit.
+  - Cada seleção emite o valor correspondente uma vez.
+- **Dependências:** T-14.
+- **Arquivos prováveis:** `tests/unit/UnitToggle.test.tsx`.
 - **Tipo:** Test.
 
-### T-23 — Testar fluxos essenciais com E2E
-- **Descrição:** validar a jornada completa com respostas de API controladas.
+### T-24 — Testar integração do App
+- **Descrição:** verificar conexão entre views, hook e estado local da unidade.
 - **Critérios de aceite:**
-  - Cobre busca vazia, zero/um/vários resultados, seleção, forecast, C/F, falha e retry.
-  - Timeout e respostas parciais são simulados sem chamadas não determinísticas à API pública.
-- **Dependências:** T-17 a T-22.
-- **Arquivos prováveis:** `tests/e2e/weather.spec.ts`.
+  - App inicializa em Celsius e renderiza a view associada a cada status.
+  - Retry repete a operação original.
+  - Troca de unidade não chama `getWeather` novamente.
+- **Dependências:** T-15, T-19, T-21, T-23.
+- **Arquivos prováveis:** `tests/unit/App.test.tsx`.
 - **Tipo:** Test.
 
-## Entrega 5 — Validação de qualidade e prontidão
-
-### T-24 — Verificar viewports responsivos
-- **Descrição:** automatizar a verificação de layout nos tamanhos definidos pela spec.
+### T-25 — Testar E2E de busca e seleção
+- **Descrição:** validar submissão, resultado vazio e seleção única/múltipla.
 - **Critérios de aceite:**
-  - Fluxos principais são verificados em 320, 375, 768, 1024, 1440 e 1920 px.
-  - Nenhum viewport apresenta rolagem horizontal ou controles inacessíveis.
-- **Dependências:** T-23.
+  - Com fixtures, cenário de zero resultados exibe empty; um seleciona automaticamente; múltiplos aguardam seleção.
+  - Nenhum cenário envia forecast antes da seleção necessária.
+  - O teste não faz chamadas à Open-Meteo.
+- **Dependências:** T-15, T-18, T-20, T-24.
+- **Arquivos prováveis:** `tests/e2e/weather-search.spec.ts`.
+- **Tipo:** Test.
+
+### T-26 — Testar E2E de forecast e unidade
+- **Descrição:** validar condições atuais, cinco dias e alternância de unidade.
+- **Critérios de aceite:**
+  - Fixture exibe as métricas atuais e cinco datas com valores previstos.
+  - Alternar C/F atualiza temperaturas atuais e diárias sem novo request.
+  - Campos ausentes mostram placeholder sem remover dias.
+- **Dependências:** T-15, T-22, T-23, T-24.
+- **Arquivos prováveis:** `tests/e2e/weather-forecast.spec.ts`.
+- **Tipo:** Test.
+
+### T-27 — Testar E2E de erro e retry
+- **Descrição:** validar falha de busca/forecast, timeout e recuperação manual.
+- **Critérios de aceite:**
+  - Fixtures de falha/timeout exibem mensagem de erro e ação de retry.
+  - Retry repete o mesmo termo ou cidade e uma busca sem resultados não aparece como erro.
+  - Cenários não fazem chamadas reais à Open-Meteo.
+- **Dependências:** T-15, T-18, T-19, T-21, T-24.
+- **Arquivos prováveis:** `tests/e2e/weather-errors.spec.ts`.
+- **Tipo:** Test.
+
+## Entrega 8 — Hardening
+
+### T-28 — Verificar viewports responsivos
+- **Descrição:** automatizar layout nos tamanhos definidos pela spec.
+- **Critérios de aceite:**
+  - Testa 320, 375, 768, 1024, 1440 e 1920 px.
+  - Em cada viewport, `scrollWidth <= clientWidth` e busca/seleção/unidade/retry permanecem acionáveis.
+- **Dependências:** T-25 a T-27.
 - **Arquivos prováveis:** `tests/e2e/weather-responsive.spec.ts`.
 - **Tipo:** Test.
 
-### T-25 — Adicionar ferramenta de auditoria de acessibilidade
-- **Descrição:** incluir integração de auditoria automatizada compatível com Playwright.
+### T-29 — Adicionar ferramenta de auditoria de acessibilidade
+- **Descrição:** incluir auditoria automatizada Axe compatível com Playwright.
 - **Critérios de aceite:**
-  - Dependência de desenvolvimento e lockfile são atualizados.
-  - A ferramenta roda no ambiente de testes do projeto.
-- **Dependências:** T-23.
+  - `@axe-core/playwright` está em devDependencies e lockfile atualizado.
+  - `pnpm install --frozen-lockfile` termina com código zero.
+- **Dependências:** T-25 a T-27.
 - **Arquivos prováveis:** `package.json`, `pnpm-lock.yaml`.
 - **Tipo:** Infra.
 
-### T-26 — Auditar acessibilidade dos fluxos
-- **Descrição:** executar análise automatizada e verificações de teclado/foco nos fluxos principais.
+### T-30 — Auditar acessibilidade dos fluxos
+- **Descrição:** executar Axe e verificações de teclado/foco nos fluxos principais.
 - **Critérios de aceite:**
-  - Auditoria não reporta violações bloqueadoras WCAG 2.2 AA nos fluxos definidos.
-  - Busca, seleção, retry e unidade são operáveis por teclado com foco visível.
-  - Resultado fica registrado; problemas de componente retornam à tarefa UI correspondente.
-- **Dependências:** T-23, T-25.
+  - Axe reporta zero violações WCAG 2.2 A/AA nos estados inicial, resultados, vazio, erro e sucesso.
+  - Busca, seleção, retry e unidade completam por teclado com foco visível.
+  - Relatório registra cenário e elemento para cada falha.
+- **Dependências:** T-29.
 - **Arquivos prováveis:** `tests/e2e/weather-accessibility.spec.ts`.
 - **Tipo:** Test.
 
-### T-27 — Validar matriz de navegadores
-- **Descrição:** executar os fluxos E2E nas versões estáveis atual e anterior dos navegadores definidos na spec.
+### T-31 — Validar matriz de navegadores
+- **Descrição:** executar E2E nas versões estáveis atual/anterior definidas na spec.
 - **Critérios de aceite:**
-  - Projetos cobrem Chrome, Edge, Firefox, Safari desktop, Safari iOS e Chrome Android nas versões requeridas.
-  - Fluxos essenciais passam em cada projeto suportado.
-- **Dependências:** T-23.
+  - Configuração declara Chrome, Edge, Firefox, Safari desktop, Safari iOS e Chrome Android nas versões requeridas.
+  - Fluxos E2E passam em cada projeto; relatório indica navegador/versão.
+- **Dependências:** T-25 a T-27.
 - **Arquivos prováveis:** `playwright.config.ts`, `tests/e2e/weather.spec.ts`.
 - **Tipo:** Test.
 
-### T-28 — Validar usabilidade com participantes
+### T-32 — Validar usabilidade com participantes
 - **Descrição:** conduzir teste moderado dos fluxos centrais com pessoas representando as personas.
 - **Critérios de aceite:**
   - Participam pelo menos cinco pessoas.
-  - Pelo menos quatro encontram cidade e identificam condições atuais em até 30 segundos, sem ajuda.
-  - Pelo menos quatro identificam os cinco dias e alternam unidade em até 60 segundos, sem ajuda.
-  - Resultados e recomendações ficam registrados.
-- **Dependências:** T-23.
+  - Cada pessoa executa busca/condições atuais e previsão de cinco dias/alternância de unidade.
+  - Pelo menos quatro de cinco concluem a primeira tarefa em `<= 30 s` e a segunda em `<= 60 s`, sem ajuda.
+  - Registro anonimizado contém tempo, sucesso/falha e observações por tarefa.
+- **Dependências:** T-25 a T-27.
 - **Arquivos prováveis:** `tests/usability/weather-usability-plan.md`, `tests/usability/weather-usability-results.md`.
 - **Tipo:** Test.
 
-### T-29 — Medir metas de performance
-- **Descrição:** executar busca e consulta sob o perfil de rede definido em RNF4.
+### T-33 — Medir performance de busca
+- **Descrição:** medir busca sob o perfil de rede definido em RNF4.
 - **Critérios de aceite:**
-  - Ambiente aplica 10 Mbps down, 2 Mbps up e 100 ms RTT.
-  - Pelo menos 95 de 100 buscas terminam em até 3 segundos.
-  - Pelo menos 95 de 100 consultas apresentam condições atuais e cinco datas em até 3 segundos.
-  - Ambiente e resultados ficam registrados.
-- **Dependências:** T-08, T-23.
-- **Arquivos prováveis:** `tests/e2e/weather-performance.spec.ts`.
+  - Ambiente aplica 10 Mbps down, 2 Mbps up e 100 ms RTT e executa 100 buscas.
+  - Pelo menos 95 buscas terminam em `<= 3 s` do envio.
+  - Relatório inclui perfil, amostras e tempos observados.
+- **Dependências:** T-18, T-25.
+- **Arquivos prováveis:** `tests/e2e/weather-search-performance.spec.ts`.
 - **Tipo:** Test.
 
-### T-30 — Configurar verificação sintética de disponibilidade
+### T-34 — Medir performance de forecast
+- **Descrição:** medir consulta meteorológica sob o perfil de rede definido em RNF4.
+- **Critérios de aceite:**
+  - Ambiente aplica 10 Mbps down, 2 Mbps up e 100 ms RTT e executa 100 consultas.
+  - Pelo menos 95 consultas exibem condições atuais e cinco posições em `<= 3 s` da seleção.
+  - Relatório inclui perfil, amostras e tempos observados.
+- **Dependências:** T-18, T-26.
+- **Arquivos prováveis:** `tests/e2e/weather-forecast-performance.spec.ts`.
+- **Tipo:** Test.
+
+### T-35 — Configurar verificação sintética de disponibilidade
 - **Descrição:** agendar smoke test do fluxo de consulta em São Paulo conforme RNF6.
 - **Critérios de aceite:**
-  - Verificação roda a cada cinco minutos para -23.5505, -46.6333.
-  - Só conta sucesso se a resposta não for erro e a UI apresentar condições atuais e cinco datas em até 10 segundos.
-  - Falha do provedor é registrada como falha do fluxo; nenhuma chave é necessária.
-- **Dependências:** T-23.
+  - Execução ocorre a cada cinco minutos para -23.5505, -46.6333.
+  - Sucesso exige resposta sem erro e UI com condições atuais/cinco dias em `<= 10 s`.
+  - Erro do provedor é contado como falha; alerta dispara se disponibilidade mensal ficar abaixo de `99,5%`.
+  - Nenhuma chave de API é necessária.
+- **Dependências:** T-25 a T-27.
 - **Arquivos prováveis:** `.github/workflows/weather-availability.yml`, `tests/e2e/weather-smoke.spec.ts`.
 - **Tipo:** Infra.
 
-### T-31 — Validar termos e cobertura do Open-Meteo
-- **Descrição:** confirmar termos, limites de chamadas, cobertura e exigências de atribuição para o uso público planejado.
+### T-36 — Validar termos e cobertura do Open-Meteo
+- **Descrição:** confirmar termos, limites, cobertura e exigências de atribuição para o uso público planejado.
 - **Critérios de aceite:**
-  - Termos e limites aplicáveis são verificados e registrados.
-  - Cobertura é confirmada para as localidades pretendidas.
-  - O gate de lançamento permanece bloqueado enquanto a validação estiver pendente.
-- **Dependências:** T-06, T-07.
+  - Registro contém fonte/URL, data, termos, limite de chamadas, cobertura e atribuição requerida.
+  - Resultado é `aprovado` ou `bloqueado`; sem aprovação registrada, release público não prossegue.
+- **Dependências:** T-05, T-06.
 - **Arquivos prováveis:** `plans/weather-app-plan.md`.
 - **Tipo:** Infra.
 
-### T-32 — Aplicar atribuição exigida pelo provedor
-- **Descrição:** conferir a atribuição existente e acrescentar o conteúdo/link exigido pelos termos aprovados.
+### T-37 — Aplicar atribuição exigida pelo provedor
+- **Descrição:** comparar a atribuição atual com os termos aprovados e aplicar apenas o que faltar.
 - **Critérios de aceite:**
-  - A atribuição é visível no app e em documentação pública quando requerida.
-  - Texto/link corresponde aos termos registrados em T-31.
-- **Dependências:** T-31.
+  - Texto/link no app é comparado com a exigência registrada em T-36.
+  - Se houver exigência adicional, app/README exibem texto/link aprovado; caso contrário, verificação fica registrada sem alteração.
+- **Dependências:** T-36.
 - **Arquivos prováveis:** `src/App.tsx`, `README.md`.
 - **Tipo:** UI.
 
-### T-33 — Executar gates finais do projeto
-- **Descrição:** executar a suíte e registrar o resultado sem misturar correções de funcionalidades nesta tarefa.
+### T-38 — Executar gates finais do projeto
+- **Descrição:** executar a suíte e registrar resultados sem misturar correções de funcionalidades nesta tarefa.
 - **Critérios de aceite:**
-  - `pnpm lint`, `pnpm build`, `pnpm test` e `pnpm test:e2e` passam.
-  - Falhas encontradas são encaminhadas à tarefa responsável e retestadas antes de concluir.
-  - Liberação pública aguarda a conclusão das tarefas T-31 e T-32.
-- **Dependências:** T-04 a T-08, T-18 a T-32.
+  - `pnpm lint`, `pnpm build`, `pnpm test` e `pnpm test:e2e` terminam com código zero.
+  - Falha é associada à tarefa responsável; o comando correspondente passa após correção.
+  - Release público tem aprovação T-36 e verificação T-37 concluídas.
+- **Dependências:** T-16 a T-37.
 - **Arquivos prováveis:** `package.json`, relatórios dos comandos de validação.
 - **Tipo:** Test.
+
+## Rastreabilidade para a Spec
+
+| Tarefa | Requisitos e critérios relacionados |
+| --- | --- |
+| T-01 | RF1–RF6; RNF3, RNF8, RNF9 |
+| T-02 | RF4; RF4.1–RF4.4; RNF3 |
+| T-03 | RF3; RF3.1; datas locais de RF3.1/RF6.1 |
+| T-04 | RF4; RF4.1–RF4.4 |
+| T-05 | RF2, RF3; RF2.1, RF3.1; RNF8 |
+| T-06 | RF1, RF5; RF1.1–RF1.9, RF5.3–RF5.6 |
+| T-07 | RF2, RF3, RF5, RF6; RF2.1–RF2.3, RF3.1–RF3.3, RF5.2, RF5.4, RF6.1–RF6.3; RNF8 |
+| T-08 | RF1, RF2, RF3, RF5, RF6; RF1.3, RF1.5, RF2.2, RF3.2–RF3.3, RF5.2–RF5.6, RF6.2 |
+| T-09 | RF1; RF1.3, RF1.6 |
+| T-10 | RF5; RF5.1–RF5.5; RNF5 |
+| T-11 | RF1; RF1.4–RF1.7; RNF5 |
+| T-12 | RF1; RF1.1–RF1.2, RF1.8–RF1.9; RNF5 |
+| T-13 | RF1, RF5; RF1.3, RF1.8–RF1.9, RF5.1–RF5.5 |
+| T-14 | RF2, RF6; RF2.1–RF2.2, RF6.1–RF6.3; RNF8 |
+| T-15 | RF3; RF3.1–RF3.3 |
+| T-16 | RF4; RF4.1–RF4.4; RNF3 |
+| T-17 | RF1–RF6; RF1.6, RF1.8–RF1.9, RF2.1, RF3.1, RF4.3, RF5.1–RF5.6, RF6.1–RF6.3; RNF1, RNF3, RNF8, RNF9 |
+| T-18 | RF1, RF2, RF3, RF5, RF6; RF1.3, RF1.5, RF2.2, RF3.2–RF3.3, RF5.2–RF5.6, RF6.2 |
+| T-19 | RF1, RF5; RF1.6, RF5.1–RF5.6; RNF5 |
+| T-20 | RF1; RF1.1–RF1.9; RNF5 |
+| T-21 | RF1, RF2, RF5; RF1.3, RF1.8–RF1.9, RF2.3, RF5.5 |
+| T-22 | RF2, RF3, RF6; RF2.1–RF2.2, RF3.1–RF3.3, RF6.2–RF6.3 |
+| T-23 | RF4; RF4.1–RF4.4; RNF3 |
+| T-24 | RF1, RF4, RF5; RF1.6, RF5.1–RF5.5; RNF1, RNF3, RNF9 |
+| T-25 | RF1, RF2, RF3, RF4, RF5; E2E RF1.3, RF1.8–RF1.9, RF2.3, RF3.1, RF4.3; RNF9 |
+| T-26 | RF2, RF3, RF4; RF2.1–RF2.2, RF3.1–RF3.3, RF4.3; RNF3 |
+| T-27 | RF5; RF5.2–RF5.5; RNF6 |
+| T-28 | RNF1 |
+| T-29 | RNF5 |
+| T-30 | RNF7 |
+| T-31 | US1–US4; RNF2 |
+| T-32 | RNF4 |
+| T-33 | RNF4 |
+| T-34 | RNF4 |
+| T-35 | RNF6; RF5.4 |
+| T-36 | RNF10 |
+| T-37 | RNF10 |
+| T-38 | RF1–RF6; RNF1–RNF10 (gate final de qualidade) |
