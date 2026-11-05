@@ -7,41 +7,46 @@
  */
 
 export type Unit = 'celsius' | 'fahrenheit';
+export type TemperatureUnit = Unit;
 
-/** Resultado da API de geocoding (uma cidade). */
+export type WeatherValue<T> = T | null;
+
+/** Localização normalizada a partir do geocoding. */
 export interface City {
   id: number;
   name: string;
-  country: string;
-  /** Estado/região, quando disponível (ajuda a desambiguar homônimos). */
-  admin1?: string;
+  country: string | null;
+  region: string | null;
   latitude: number;
   longitude: number;
 }
 
-/** Condições atuais. Temperatura sempre em °C. */
+/** Condições atuais normalizadas; temperatura sempre em °C. */
 export interface CurrentWeather {
-  temperature: number;
-  weatherCode: number;
-  humidity: number;
-  windSpeed: number;
-  pressure: number;
-  precipitation: number;
-  time: string;
+  temperatureC: WeatherValue<number>;
+  weatherCode: WeatherValue<number>;
+  humidityPercent: WeatherValue<number>;
+  windSpeedKmh: WeatherValue<number>;
+  pressureHpa: WeatherValue<number>;
+  precipitationMm: WeatherValue<number>;
+  observedAtLocal: string | null;
 }
 
-/** Um dia da previsão. Temperaturas sempre em °C. */
+/** Dados diários da previsão no fuso local da cidade. */
 export interface ForecastDay {
-  date: string;
-  min: number;
-  max: number;
-  weatherCode: number;
-  precipitationProbability: number;
+  date: string; // YYYY-MM-DD
+  weatherCode: WeatherValue<number>;
+  minTemperatureC: WeatherValue<number>;
+  maxTemperatureC: WeatherValue<number>;
+  precipitationProbabilityMaxPercent: WeatherValue<number>;
 }
 
-/** Agregado entregue à UI: cidade + clima atual + 5 dias de previsão. */
+/** Cidade, condições atuais e cinco posições da previsão. */
 export interface WeatherData {
   city: City;
   current: CurrentWeather;
   forecast: ForecastDay[];
+  timezone: string | null;
+  utcOffsetSeconds: number | null;
+  receivedAt: string;
 }

@@ -11,18 +11,29 @@ interface ForecastCardProps {
 
 /** Card de um dia da previsão. */
 export default function ForecastCard({ day, index, unit }: ForecastCardProps) {
+  const weatherLabel =
+    day.weatherCode === null ? 'Condição indisponível' : getWeatherLabel(day.weatherCode);
+
   return (
     <li className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-center backdrop-blur-md">
       <p className="font-semibold">{getDayLabel(day.date, index)}</p>
       <p className="text-xs text-white/50">{getShortDate(day.date)}</p>
-      <span aria-hidden="true" className="text-3xl" title={getWeatherLabel(day.weatherCode)}>
-        {getWeatherIcon(day.weatherCode)}
-      </span>
+      {day.weatherCode !== null && (
+        <span aria-hidden="true" className="text-3xl" title={weatherLabel}>
+          {getWeatherIcon(day.weatherCode)}
+        </span>
+      )}
       <p className="text-sm">
-        <span className="font-semibold">{formatTemperature(day.max, unit)}</span>{' '}
-        <span className="text-white/50">{formatTemperature(day.min, unit)}</span>
+        <span className="font-semibold">
+          {day.maxTemperatureC === null ? '—' : formatTemperature(day.maxTemperatureC, unit)}
+        </span>{' '}
+        <span className="text-white/50">
+          {day.minTemperatureC === null ? '—' : formatTemperature(day.minTemperatureC, unit)}
+        </span>
       </p>
-      <p className="text-xs text-accent-400">💧 {day.precipitationProbability}%</p>
+      <p className="text-xs text-accent-400">
+        💧 {day.precipitationProbabilityMaxPercent === null ? '—' : `${day.precipitationProbabilityMaxPercent}%`}
+      </p>
     </li>
   );
 }

@@ -31,8 +31,8 @@ async function fetchWithTimeout(url: string): Promise<Response> {
 interface GeocodingResult {
   id: number;
   name: string;
-  country?: string;
-  admin1?: string;
+  country?: string | null;
+  admin1?: string | null;
   latitude: number;
   longitude: number;
 }
@@ -57,51 +57,71 @@ export async function searchCities(name: string): Promise<City[]> {
   return data.results.map((r) => ({
     id: r.id,
     name: r.name,
-    country: r.country ?? '',
-    admin1: r.admin1,
+    country: r.country ?? null,
+    region: r.admin1 ?? null,
     latitude: r.latitude,
     longitude: r.longitude,
   }));
 }
 
 interface ForecastResponse {
+  timezone?: string;
+  utc_offset_seconds?: number;
   current?: {
-    time: string;
-    temperature_2m: number;
-    relative_humidity_2m: number;
-    wind_speed_10m: number;
-    surface_pressure: number;
-    precipitation: number;
-    weather_code: number;
+    time?: string;
+    temperature_2m?: number | null;
+    relative_humidity_2m?: number | null;
+    wind_speed_10m?: number | null;
+    surface_pressure?: number | null;
+    precipitation?: number | null;
+    weather_code?: number | null;
   };
   daily?: {
-    time: string[];
-    weather_code: number[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    precipitation_probability_max: (number | null)[];
+    time?: Array<string | null>;
+    weather_code?: Array<number | null>;
+    temperature_2m_max?: Array<number | null>;
+    temperature_2m_min?: Array<number | null>;
+    precipitation_probability_max?: Array<number | null>;
   };
 }
 
 function mapCurrent(c: NonNullable<ForecastResponse['current']>): CurrentWeather {
   return {
-    time: c.time,
-    temperature: c.temperature_2m,
-    humidity: c.relative_humidity_2m,
-    windSpeed: c.wind_speed_10m,
-    pressure: c.surface_pressure,
-    precipitation: c.precipitation,
-    weatherCode: c.weather_code,
+    observedAtLocal: c.time ?? null,
+    temperatureC: c.temperature_2m ?? null,
+    humidityPercent: c.relative_humidity_2m ?? null,
+    windSpeedKmh: c.wind_speed_10m ?? null,
+    pressureHpa: c.surface_pressure ?? null,
+    precipitationMm: c.precipitation ?? null,
+    weatherCode: c.weather_code ?? null,
   };
 }
 
-function mapForecast(d: NonNullable<ForecastResponse['daily']>): ForecastDay[] {
-  return d.time.map((date, i) => ({
-    date,
-    weatherCode: d.weather_code[i],
-    max: d.temperature_2m_max[i],
-    min: d.temperature_2m_min[i],
-    precipitationProbability: d.precipitation_probability_max[i] ?? 0,
+function addCalendarDays(date: string, days: number): string {
+  const [year, month, day] = date.split('-').map(Number);
+  const value = new Date(Date.UTC(year, month - 1, day + days));
+  const monthText = String(value.getUTCMonth() + 1).padStart(2, '0');
+  const dayText = String(value.getUTCDate()).padStart(2, '0');
+  return `${value.getUTCFullYear()}-${monthText}-${dayText}`;
+}
+
+function mapForecast(
+  daily: NonNullable<ForecastResponse['daily']>,
+  currentTime: string | undefined,
+): ForecastDay[] {
+  const dates = daily.time ?? [];
+  const startDate = dates[0] ?? currentTime?.slice(0, 10);
+  if (!startDate) {
+    throw new WeatherServiceError('Resposta de previsão sem data de referência.');
+  }
+
+  return Array.from({ length: 5 }, (_, index) => ({
+    date: dates[index] ?? addCalendarDays(startDate, index),
+    weatherCode: daily.weather_code?.[index] ?? null,
+    minTemperatureC: daily.temperature_2m_min?.[index] ?? null,
+    maxTemperatureC: daily.temperature_2m_max?.[index] ?? null,
+    precipitationProbabilityMaxPercent:
+      daily.precipitation_probability_max?.[index] ?? null,
   }));
 }
 
@@ -134,6 +154,9 @@ export async function getWeather(city: City): Promise<WeatherData> {
   return {
     city,
     current: mapCurrent(data.current),
-    forecast: mapForecast(data.daily),
+    forecast: mapForecast(data.daily, data.current.time),
+    timezone: data.timezone ?? null,
+    utcOffsetSeconds: data.utc_offset_seconds ?? null,
+    receivedAt: new Date().toISOString(),
   };
 }

@@ -30,7 +30,7 @@ function Metric({ icon, label, value }: MetricProps) {
 
 /** Seção "hero" com as condições atuais da cidade selecionada. */
 export default function CurrentWeather({ city, current, unit }: CurrentWeatherProps) {
-  const location = [city.admin1, city.country].filter(Boolean).join(', ');
+  const location = [city.region, city.country].filter(Boolean).join(', ');
 
   return (
     <section
@@ -43,32 +43,42 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
           {location && <p className="text-white/60">{location}</p>}
 
           <div className="mt-6 flex items-center gap-4">
-            <span aria-hidden="true" className="text-6xl">
-              {getWeatherIcon(current.weatherCode)}
-            </span>
+            {current.weatherCode !== null && (
+              <span aria-hidden="true" className="text-6xl">
+                {getWeatherIcon(current.weatherCode)}
+              </span>
+            )}
             <span className="text-6xl font-light md:text-7xl">
-              {formatTemperature(current.temperature, unit)}
+              {current.temperatureC === null ? '—' : formatTemperature(current.temperatureC, unit)}
             </span>
           </div>
-          <p className="mt-2 text-white/70">{getWeatherLabel(current.weatherCode)}</p>
+          <p className="mt-2 text-white/70">
+            {current.weatherCode === null
+              ? 'Condição indisponível'
+              : getWeatherLabel(current.weatherCode)}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Metric icon="💧" label="Umidade" value={`${Math.round(current.humidity)}%`} />
+          <Metric
+            icon="💧"
+            label="Umidade"
+            value={current.humidityPercent === null ? '—' : `${Math.round(current.humidityPercent)}%`}
+          />
           <Metric
             icon="💨"
             label="Vento"
-            value={`${Math.round(current.windSpeed)} km/h`}
+            value={current.windSpeedKmh === null ? '—' : `${Math.round(current.windSpeedKmh)} km/h`}
           />
           <Metric
             icon="🌧️"
             label="Precipitação"
-            value={`${current.precipitation} mm`}
+            value={current.precipitationMm === null ? '—' : `${current.precipitationMm} mm`}
           />
           <Metric
             icon="📊"
             label="Pressão"
-            value={`${Math.round(current.pressure)} hPa`}
+            value={current.pressureHpa === null ? '—' : `${Math.round(current.pressureHpa)} hPa`}
           />
         </div>
       </div>

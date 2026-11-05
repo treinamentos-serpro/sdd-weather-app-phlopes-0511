@@ -10,18 +10,18 @@ const city: City = {
   id: 1,
   name: 'Seattle',
   country: 'Estados Unidos',
-  admin1: 'Washington',
+  region: 'Washington',
   latitude: 47.6,
   longitude: -122.33,
 };
 
 const current: CurrentWeatherType = {
-  time: '2026-06-16T12:00',
-  temperature: 0, // 0°C => 32°F (fácil de verificar)
-  humidity: 80,
-  windSpeed: 10,
-  pressure: 1015,
-  precipitation: 0,
+  observedAtLocal: '2026-06-16T12:00',
+  temperatureC: 0,
+  humidityPercent: 80,
+  windSpeedKmh: 10,
+  pressureHpa: 1015,
+  precipitationMm: 0,
   weatherCode: 3,
 };
 

@@ -6,7 +6,7 @@ const CITY: City = {
   id: 1,
   name: 'Seattle',
   country: 'Estados Unidos',
-  admin1: 'Washington',
+  region: 'Washington',
   latitude: 47.6,
   longitude: -122.33,
 };
@@ -88,14 +88,18 @@ describe('weatherService', () => {
             temperature_2m_min: [12, 11, 13, 14, 15],
             precipitation_probability_max: [20, 90, 70, 10, null],
           },
+          timezone: 'America/Los_Angeles',
+          utc_offset_seconds: -25200,
         }),
       );
 
       const data = await getWeather(CITY);
-      expect(data.current.temperature).toBe(18);
+      expect(data.current.temperatureC).toBe(18);
       expect(data.forecast).toHaveLength(5);
-      // precipitação nula vira 0 (resposta parcial)
-      expect(data.forecast[4].precipitationProbability).toBe(0);
+      expect(data.forecast[4].precipitationProbabilityMaxPercent).toBeNull();
+      expect(data.timezone).toBe('America/Los_Angeles');
+      expect(data.utcOffsetSeconds).toBe(-25200);
+      expect(data.receivedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });
 
     it('lança erro quando a resposta está incompleta', async () => {
