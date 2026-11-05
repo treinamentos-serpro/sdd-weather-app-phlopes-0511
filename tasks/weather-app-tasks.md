@@ -395,6 +395,62 @@ Backlog derivado de `plans/weather-app-plan.md` e rastreado à spec. A ordem das
 - **Arquivos prováveis:** `package.json`, relatórios dos comandos de validação.
 - **Tipo:** Test.
 
+## Prioridade, tamanho e sequência de entrega
+
+**Prioridade:** P0 é o caminho para entregar e testar o fluxo funcional de v1; P1 é hardening necessário antes do lançamento público, mas pode ocorrer após uma demo/staging funcional; P2 fica reservado para trabalho pós-v1 fora do escopo atual. T-36 e T-37 são gates de release, embora estejam na etapa P1.
+
+**Tamanho relativo:** P é uma mudança focada; M cobre integração ou vários cenários relacionados; G envolve orquestração, validação transversal ou coordenação operacional. É uma estimativa relativa, não uma duração.
+
+| Tarefa | Prioridade | Tamanho |
+| --- | --- | --- |
+| T-01 | P0 | P |
+| T-02 | P0 | P |
+| T-03 | P0 | P |
+| T-04 | P0 | P |
+| T-05 | P0 | M |
+| T-06 | P0 | M |
+| T-07 | P0 | G |
+| T-08 | P0 | P |
+| T-09 | P0 | P |
+| T-10 | P0 | P |
+| T-11 | P0 | P |
+| T-12 | P0 | M |
+| T-13 | P0 | M |
+| T-14 | P0 | P |
+| T-15 | P0 | G |
+| T-16 | P0 | P |
+| T-17 | P0 | P |
+| T-18 | P0 | M |
+| T-19 | P0 | P |
+| T-20 | P0 | P |
+| T-21 | P0 | M |
+| T-22 | P0 | M |
+| T-23 | P0 | P |
+| T-24 | P0 | M |
+| T-25 | P0 | G |
+| T-26 | P0 | M |
+| T-27 | P0 | M |
+| T-28 | P1 | M |
+| T-29 | P1 | P |
+| T-30 | P1 | M |
+| T-31 | P1 | M |
+| T-32 | P1 | M |
+| T-33 | P1 | M |
+| T-34 | P1 | M |
+| T-35 | P1 | G |
+| T-36 | P1 | M |
+| T-37 | P1 | M |
+| T-38 | P1 | G |
+
+Não há tarefas P2 neste backlog: funcionalidades desse nível permanecem fora da v1 e só devem ser adicionadas após priorização própria.
+
+### Fatias verticais sugeridas
+
+1. **Primeira consulta visível — busca até clima atual, cinco dias e C/F.** Implementar T-01–T-15; validar com T-16–T-18, T-20, T-22–T-26. Resultado: a pessoa pesquisa uma cidade, escolhe um resultado quando necessário, vê dados atuais e previsão e alterna unidade. T-25 verifica a jornada em desktop e viewport mobile.
+2. **Recuperação confiável — vazio, falhas e concorrência.** Completar T-19, T-21 e T-27. Resultado: busca sem resultados, erros, timeout, retry e respostas fora de ordem têm comportamento verificado.
+3. **Prontidão operacional.** Executar T-28–T-35. Resultado: responsividade, acessibilidade, compatibilidade, usabilidade, performance e disponibilidade são medidas contra os RNFs.
+4. **Liberação pública.** Concluir T-36–T-38. Resultado: termos/cobertura aprovados, atribuição conferida e gates finais passando; T-36/T-37 bloqueiam o release se pendentes.
+
 ## Rastreabilidade: Requisito → Tarefas
 
 | Requisito funcional | Tarefas de implementação | Tarefas de teste | Lacuna |
