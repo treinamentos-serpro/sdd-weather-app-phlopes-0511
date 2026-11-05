@@ -395,45 +395,13 @@ Backlog derivado de `plans/weather-app-plan.md` e rastreado à spec. A ordem das
 - **Arquivos prováveis:** `package.json`, relatórios dos comandos de validação.
 - **Tipo:** Test.
 
-## Rastreabilidade para a Spec
+## Rastreabilidade: Requisito → Tarefas
 
-| Tarefa | Requisitos e critérios relacionados |
-| --- | --- |
-| T-01 | RF1–RF6; RNF3, RNF8, RNF9 |
-| T-02 | RF4; RF4.1–RF4.4; RNF3 |
-| T-03 | RF3; RF3.1; datas locais de RF3.1/RF6.1 |
-| T-04 | RF4; RF4.1–RF4.4 |
-| T-05 | RF2, RF3; RF2.1, RF3.1; RNF8 |
-| T-06 | RF1, RF5; RF1.1–RF1.9, RF5.3–RF5.6 |
-| T-07 | RF2, RF3, RF5, RF6; RF2.1–RF2.3, RF3.1–RF3.3, RF5.2, RF5.4, RF6.1–RF6.3; RNF8 |
-| T-08 | RF1, RF2, RF3, RF5, RF6; RF1.3, RF1.5, RF2.2, RF3.2–RF3.3, RF5.2–RF5.6, RF6.2 |
-| T-09 | RF1; RF1.3, RF1.6 |
-| T-10 | RF5; RF5.1–RF5.5; RNF5 |
-| T-11 | RF1; RF1.4–RF1.7; RNF5 |
-| T-12 | RF1; RF1.1–RF1.2, RF1.8–RF1.9; RNF5 |
-| T-13 | RF1, RF5; RF1.3, RF1.8–RF1.9, RF5.1–RF5.5 |
-| T-14 | RF2, RF6; RF2.1–RF2.2, RF6.1–RF6.3; RNF8 |
-| T-15 | RF3; RF3.1–RF3.3 |
-| T-16 | RF4; RF4.1–RF4.4; RNF3 |
-| T-17 | RF1–RF6; RF1.6, RF1.8–RF1.9, RF2.1, RF3.1, RF4.3, RF5.1–RF5.6, RF6.1–RF6.3; RNF1, RNF3, RNF8, RNF9 |
-| T-18 | RF1, RF2, RF3, RF5, RF6; RF1.3, RF1.5, RF2.2, RF3.2–RF3.3, RF5.2–RF5.6, RF6.2 |
-| T-19 | RF1, RF5; RF1.6, RF5.1–RF5.6; RNF5 |
-| T-20 | RF1; RF1.1–RF1.9; RNF5 |
-| T-21 | RF1, RF2, RF5; RF1.3, RF1.8–RF1.9, RF2.3, RF5.5 |
-| T-22 | RF2, RF3, RF6; RF2.1–RF2.2, RF3.1–RF3.3, RF6.2–RF6.3 |
-| T-23 | RF4; RF4.1–RF4.4; RNF3 |
-| T-24 | RF1, RF4, RF5; RF1.6, RF5.1–RF5.5; RNF1, RNF3, RNF9 |
-| T-25 | RF1–RF4; RF1.2–RF1.3, RF1.8–RF1.9, RF2.1, RF3.1, RF4.3; RNF1, RNF3, RNF9 |
-| T-26 | RF2, RF3, RF4; RF2.1–RF2.2, RF3.1–RF3.3, RF4.3; RNF3 |
-| T-27 | RF5; RF5.2–RF5.5; RNF6 |
-| T-28 | RNF1 |
-| T-29 | RNF5 |
-| T-30 | RNF7 |
-| T-31 | US1–US4; RNF2 |
-| T-32 | RNF4 |
-| T-33 | RNF4 |
-| T-34 | RNF4 |
-| T-35 | RNF6; RF5.4 |
-| T-36 | RNF10 |
-| T-37 | RNF10 |
-| T-38 | RF1–RF6; RNF1–RNF10 (gate final de qualidade) |
+| Requisito funcional | Tarefas de implementação | Tarefas de teste | Lacuna |
+| --- | --- | --- | --- |
+| RF1 — Busca e seleção de cidade | T-05, T-07, T-10, T-11, T-15 | T-18, T-20, T-21, T-24, T-25 | Nenhuma identificada |
+| RF2 — Condições atuais | T-06, T-07, T-12, T-15 | T-18, T-22, T-25, T-26 | Nenhuma identificada |
+| RF3 — Previsão de cinco dias | T-06, T-07, T-13, T-15 | T-18, T-22, T-25, T-26 | Nenhuma identificada |
+| RF4 — Unidade de temperatura | T-02, T-14, T-15 | T-16, T-23, T-24, T-25, T-26 | Nenhuma identificada |
+| RF5 — Estados e recuperação | T-05, T-06, T-07, T-08, T-09, T-15 | T-18, T-19, T-21, T-24, T-27 | Nenhuma identificada |
+| RF6 — Referência temporal | T-06, T-07, T-12, T-15 | T-18, T-22 | Nenhuma identificada |
