@@ -36,6 +36,17 @@ function Harness() {
 }
 
 describe('UnitToggle + CurrentWeather', () => {
+  it('exibe o ícone, a condição e as métricas atuais', () => {
+    render(<Harness />);
+
+    expect(screen.getByText('☁️')).toBeInTheDocument();
+    expect(screen.getByText('Nublado')).toBeInTheDocument();
+    expect(screen.getByText('80%')).toBeInTheDocument();
+    expect(screen.getByText('10 km/h')).toBeInTheDocument();
+    expect(screen.getByText('0 mm')).toBeInTheDocument();
+    expect(screen.getByText('1015 hPa')).toBeInTheDocument();
+  });
+
   it('converte a temperatura ao alternar a unidade', async () => {
     render(<Harness />);
     expect(screen.getByText('0°')).toBeInTheDocument();

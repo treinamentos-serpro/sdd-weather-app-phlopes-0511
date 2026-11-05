@@ -13,16 +13,20 @@ interface ForecastCardProps {
 export default function ForecastCard({ day, index, unit }: ForecastCardProps) {
   const weatherLabel =
     day.weatherCode === null ? 'Condição indisponível' : getWeatherLabel(day.weatherCode);
+  const weatherIcon = getWeatherIcon(day.weatherCode ?? -1);
+  const precipitationProbability =
+    day.precipitationProbabilityMaxPercent === null
+      ? null
+      : `${day.precipitationProbabilityMaxPercent}%`;
 
   return (
     <li className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-center backdrop-blur-md">
       <p className="font-semibold">{getDayLabel(day.date, index)}</p>
       <p className="text-xs text-white/50">{getShortDate(day.date)}</p>
-      {day.weatherCode !== null && (
-        <span aria-hidden="true" className="text-3xl" title={weatherLabel}>
-          {getWeatherIcon(day.weatherCode)}
-        </span>
-      )}
+      <span aria-hidden="true" className="text-3xl" title={weatherLabel}>
+        {weatherIcon}
+      </span>
+      <p className="text-xs text-white/60">{weatherLabel}</p>
       <p className="text-sm">
         <span className="font-semibold">
           {day.maxTemperatureC === null ? '—' : formatTemperature(day.maxTemperatureC, unit)}
@@ -32,7 +36,10 @@ export default function ForecastCard({ day, index, unit }: ForecastCardProps) {
         </span>
       </p>
       <p className="text-xs text-accent-400">
-        💧 {day.precipitationProbabilityMaxPercent === null ? '—' : `${day.precipitationProbabilityMaxPercent}%`}
+        <span aria-hidden="true">💧 {precipitationProbability ?? '—'}</span>
+        <span className="sr-only">
+          Probabilidade de chuva: {precipitationProbability ?? 'indisponível'}
+        </span>
       </p>
     </li>
   );
