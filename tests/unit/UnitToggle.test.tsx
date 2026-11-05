@@ -48,4 +48,20 @@ describe('UnitToggle + CurrentWeather', () => {
     render(<Harness />);
     expect(screen.getByRole('button', { name: '°C' })).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it('permite navegar entre as unidades por teclado', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    render(<UnitToggle unit="celsius" onChange={onChange} />);
+
+    await user.tab();
+    expect(screen.getByRole('button', { name: '°C' })).toHaveFocus();
+
+    await user.tab();
+    expect(screen.getByRole('button', { name: '°F' })).toHaveFocus();
+
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledWith('fahrenheit');
+  });
 });
