@@ -8,7 +8,7 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 
 ## Functional Requirements
 
-- **RF1 — Busca e seleção de cidade:** apresentar um estado inicial com busca manual; permitir pesquisar cidades, mostrar resultados com nome da cidade e país e, quando disponível, estado/região, e selecionar o local cujos dados serão consultados. Normalizar acentos e diferenças entre maiúsculas e minúsculas para a busca sem remover pontuação válida do nome.
+- **RF1 — Busca e seleção de cidade:** apresentar um estado inicial com busca manual; iniciar a busca somente após envio do formulário, sem sugestões ao digitar; mostrar até cinco resultados com nome da cidade, país e, quando disponível, estado/região. Selecionar automaticamente um único resultado; quando houver vários, aguardar seleção explícita antes de consultar o clima. Normalizar acentos e diferenças entre maiúsculas e minúsculas sem remover pontuação válida do nome.
 - **RF2 — Condições atuais:** após a seleção de uma cidade, exibir temperatura, descrição da condição meteorológica, umidade relativa (%), velocidade do vento (km/h), pressão (hPa) e precipitação atual (mm), usando os valores e a semântica fornecidos pelo Open-Meteo. Indicar como indisponível qualquer métrica ausente.
 - **RF3 — Previsão de cinco dias:** exibir cinco posições de calendário consecutivas no fuso local da cidade selecionada, começando hoje e incluindo os quatro dias seguintes. Para cada dia, exibir temperatura mínima e máxima, condição meteorológica e probabilidade máxima de precipitação (%); indicar dados indisponíveis sem omitir a posição daquele dia.
 - **RF4 — Unidade de temperatura:** permitir alternar entre Celsius e Fahrenheit e atualizar todos os valores e rótulos de temperatura apresentados, tanto nas condições atuais quanto na previsão. Converter por $°F = (°C × 9/5) + 32$ e $°C = (°F − 32) × 5/9$.
@@ -30,8 +30,8 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 
 - **Cenário RF1.1 — Exibir resultados desambiguados**
 	- **Given** o serviço de busca retorna uma ou mais cidades com nome e país, e estado/região quando disponível
-	- **When** a pessoa pesquisa por um desses nomes
-	- **Then** cada resultado exibe o nome da cidade e o país, além do estado/região quando retornado pelo serviço
+	- **When** a pessoa envia o formulário de busca
+	- **Then** são exibidos no máximo cinco resultados, cada um com nome da cidade e país, além do estado/região quando retornado pelo serviço
 - **Cenário RF1.2 — Selecionar cidade**
 	- **Given** a busca exibe mais de uma cidade correspondente
 	- **When** a pessoa seleciona um resultado específico
@@ -47,7 +47,7 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 - **Cenário RF1.5 — Busca com e sem acentos**
 	- **Given** o serviço de geocoding retorna a mesma cidade para o termo "São Paulo" e para o termo normalizado "sao paulo"
 	- **When** a pessoa pesquisa por qualquer uma das duas grafias, independentemente de maiúsculas/minúsculas
-	- **Then** a aplicação envia a consulta sem diacríticos e apresenta a cidade retornada pelo serviço
+	- **Then** a aplicação envia a consulta sem diacríticos e em minúsculas e apresenta a cidade retornada pelo serviço
 - **Cenário RF1.6 — Estado inicial sem cidade selecionada**
 	- **Given** a pessoa abre a aplicação sem uma cidade previamente selecionada
 	- **When** a tela inicial é exibida
@@ -56,6 +56,14 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 	- **Given** o serviço de geocoding retorna uma cidade cujo nome contém apóstrofo ou ponto, como St. John's
 	- **When** a pessoa pesquisa pelo nome
 	- **Then** a aplicação preserva a pontuação na consulta e exibe o nome retornado pelo serviço
+- **Cenário RF1.8 — Vários resultados exigem seleção**
+	- **Given** a busca retorna de duas a cinco cidades
+	- **When** os resultados são exibidos
+	- **Then** a lista de resultados permanece disponível e nenhuma consulta meteorológica é enviada até a pessoa selecionar uma cidade
+- **Cenário RF1.9 — Selecionar automaticamente resultado único**
+	- **Given** a busca retorna exatamente uma cidade
+	- **When** os resultados da busca são recebidos
+	- **Then** essa cidade é selecionada automaticamente e uma consulta meteorológica é iniciada para sua localização
 
 **RF2 — Condições atuais**
 
@@ -77,7 +85,7 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 - **Cenário RF3.1 — Exibir cinco dias**
 	- **Given** uma cidade selecionada e uma resposta de previsão com dados para hoje e os quatro dias seguintes
 	- **When** a consulta termina com sucesso
-	- **Then** a interface exibe exatamente cinco datas consecutivas no fuso local da cidade, começando por hoje, com temperaturas mínima/máxima em °C ou °F e probabilidade máxima de precipitação em %, usando rótulos de data em pt-BR (Hoje, Amanhã e dia/mês abreviado para os demais dias)
+	- **Then** a interface exibe exatamente cinco datas consecutivas no fuso local da cidade, começando por hoje, com temperaturas mínima/máxima em °C ou °F e probabilidade máxima de precipitação em %, usando rótulos pt-BR "Hoje", "Amanhã" e "DD MMM" (por exemplo, "12 Jun") para os demais dias
 - **Cenário RF3.2 — Campo de previsão ausente**
 	- **Given** uma resposta de previsão em que um dos dados está ausente para um dos dias
 	- **When** a previsão é exibida
@@ -122,7 +130,7 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 	- **Then** a interface informa que a busca não pôde ser concluída e exibe uma ação para tentar novamente, sem apresentar o estado de cidade não encontrada
 - **Cenário RF5.4 — Timeout**
 	- **Given** uma busca ou consulta meteorológica está em andamento
-	- **When** a requisição não termina em até 10 segundos
+	- **When** a requisição atinge 10 segundos sem resposta
 	- **Then** o carregamento é encerrado, a interface informa que a requisição demorou demais e oferece uma nova tentativa
 - **Cenário RF5.5 — Tentar novamente**
 	- **Given** a interface exibe uma falha ou timeout de busca ou consulta meteorológica
@@ -140,9 +148,9 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 	- **When** as condições atuais são exibidas
 	- **Then** a interface apresenta a data, o horário e o deslocamento UTC retornados junto às condições atuais da cidade consultada
 - **Cenário RF6.2 — Referência temporal ausente**
-	- **Given** a resposta meteorológica não inclui data ou horário de referência
+	- **Given** a resposta meteorológica não inclui data, horário ou deslocamento UTC de referência
 	- **When** as condições atuais são exibidas
-	- **Then** a interface não apresenta uma data ou horário de atualização inventado
+	- **Then** a interface não inventa o campo ausente e identifica a atualidade dos dados como não confirmada
 - **Cenário RF6.3 — Observação desatualizada**
 	- **Given** o horário de referência da observação é anterior em mais de 60 minutos ao horário de recebimento da resposta
 	- **When** as condições atuais são exibidas
@@ -150,16 +158,29 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 
 ## Non-Functional Requirements
 
-- **RNF1 — Responsividade:** os fluxos de busca, seleção, consulta e alternância de unidade devem funcionar em larguras de tela de 320 px até desktop, sem rolagem horizontal nem perda de conteúdo ou controles.
+- **RNF1 — Responsividade:** os fluxos de busca, seleção, consulta e alternância de unidade devem funcionar em larguras de 320 px a 1920 px, incluindo viewports de 320, 375, 768, 1024, 1440 e 1920 px, sem rolagem horizontal nem perda de conteúdo ou controles.
 - **RNF2 — Usabilidade:** em teste moderado com pelo menos cinco participantes representando as personas, ao menos quatro devem encontrar uma cidade e identificar suas condições atuais em até 30 segundos, sem ajuda; ao menos quatro também devem identificar os cinco dias da previsão e alternar a unidade em até 60 segundos, sem ajuda.
 - **RNF3 — Consistência de unidades:** todos os valores de temperatura simultaneamente visíveis devem corresponder à unidade selecionada.
-- **RNF4 — Performance:** em conexão de teste de 10 Mbps de download, 2 Mbps de upload e latência de 100 ms, com o Open-Meteo respondendo, pelo menos 95% das buscas devem apresentar resultados em até 3 segundos após o envio, e pelo menos 95% das consultas devem apresentar condições atuais e as cinco posições da previsão em até 3 segundos após a seleção da cidade.
+- **RNF4 — Performance:** em conexão de teste de 10 Mbps de download, 2 Mbps de upload e latência de ida e volta (RTT) de 100 ms, com o Open-Meteo respondendo, pelo menos 95 de cada 100 buscas devem apresentar resultados em até 3 segundos após o envio, e pelo menos 95 de cada 100 consultas devem apresentar condições atuais e as cinco posições da previsão em até 3 segundos após a seleção da cidade.
 - **RNF5 — Acessibilidade:** os fluxos principais devem atender WCAG 2.2 nível AA, incluindo operação por teclado, foco visível, nomes acessíveis e contraste adequado; conformidade deve ser verificada por análise automatizada e revisão manual de teclado e leitor de tela.
-- **RNF6 — Disponibilidade e resiliência:** a disponibilidade mensal do fluxo de consulta deve ser de pelo menos 99,5%, medida por verificações sintéticas a cada cinco minutos que carregam a aplicação e solicitam condições atuais e cinco dias de previsão para São Paulo, Brasil. Uma verificação é bem-sucedida somente se os dados forem apresentados em até 10 segundos; falhas do Open-Meteo contam como falhas do fluxo. Erros devem encerrar o carregamento e permitir nova tentativa.
+- **RNF6 — Disponibilidade e resiliência:** a disponibilidade mensal do fluxo de consulta deve ser de pelo menos 99,5%, medida por verificações sintéticas a cada cinco minutos que carregam a aplicação e solicitam condições atuais e cinco dias de previsão para as coordenadas de referência de São Paulo, Brasil (-23.5505, -46.6333). Uma verificação é bem-sucedida somente se a resposta não for erro e a interface apresentar condições atuais e cinco posições da previsão em até 10 segundos; falhas do Open-Meteo contam como falhas do fluxo. Erros devem encerrar o carregamento e permitir nova tentativa.
 - **RNF7 — Compatibilidade:** suportar as versões estáveis atual e imediatamente anterior, na data de cada ciclo de teste, de Chrome, Edge, Firefox, Safari para desktop, Safari para iOS e Chrome para Android.
 - **RNF8 — Atualidade dos dados:** condições atuais com referência anterior em mais de 60 minutos ao recebimento da resposta devem ser identificadas como desatualizadas e não podem ser rotuladas apenas como atuais.
-- **RNF9 — Privacidade:** não exigir conta nem persistir dados em servidor. Não solicitar localização do dispositivo nem coletar localização ou histórico de buscas sem decisão de produto e comunicação apropriadas.
-- **RNF10 — Dependência externa:** utilizar o Open-Meteo sem chave de API, condicionado à validação de termos de uso, limites, cobertura, atribuição exigida e disponibilidade.
+- **RNF9 — Privacidade:** não exigir conta nem persistir dados em servidor. Não solicitar localização do dispositivo nem coletar identificadores pessoais. O termo de busca e as coordenadas da cidade selecionada são enviados ao Open-Meteo para fornecer o serviço; a aplicação não mantém histórico de busca.
+- **RNF10 — Dependência externa:** utilizar o Open-Meteo sem chave de API. Antes do lançamento público, confirmar termos de uso, cobertura, limites de chamadas, atribuição exigida e compatibilidade com o uso pretendido; o lançamento fica bloqueado até essa validação.
+
+## Rastreabilidade
+
+Cada história está ligada ao requisito funcional que a atende, aos cenários de aceite que a verificam e aos requisitos não funcionais aplicáveis.
+
+| User Story | Requisito funcional | Acceptance Criteria | Requisitos não funcionais relevantes |
+| --- | --- | --- | --- |
+| US1 — Busca de cidade | RF1 | RF1.1–RF1.9 | RNF1, RNF2, RNF4, RNF5, RNF7, RNF9, RNF10 |
+| US2 — Condições atuais | RF2 | RF2.1–RF2.3 | RNF1, RNF2, RNF3, RNF4, RNF5, RNF6, RNF7, RNF8, RNF9, RNF10 |
+| US3 — Planejamento dos próximos dias | RF3 | RF3.1–RF3.3 | RNF1, RNF2, RNF3, RNF4, RNF5, RNF6, RNF7, RNF10 |
+| US4 — Unidade preferida | RF4 | RF4.1–RF4.4 | RNF1, RNF2, RNF3, RNF5, RNF7 |
+| US5 — Recuperação de falhas | RF5 | RF5.1–RF5.6 | RNF1, RNF4, RNF5, RNF6, RNF7, RNF9, RNF10 |
+| US6 — Atualidade dos dados | RF6 | RF6.1–RF6.3 | RNF1, RNF2, RNF4, RNF5, RNF6, RNF7, RNF8, RNF10 |
 
 ## Edge Cases
 
@@ -222,9 +243,8 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 
 1. Quem é o público-alvo prioritário e quais métricas de negócio determinarão o sucesso do produto?
 2. Quais campos meteorológicos adicionais, além dos definidos em RF2 e RF3, são necessários para o produto?
-3. A busca deve oferecer sugestões enquanto a pessoa digita, aceitar correspondências parciais e tolerar erros de digitação?
-4. Há outros requisitos de desambiguação geográfica para países/regiões além de país obrigatório e estado/região quando disponível?
-5. A preferência de unidade deve persistir entre visitas? Essa preferência pode ser armazenada localmente no dispositivo?
-6. Quais termos, limites de chamadas, cobertura e requisitos de atribuição do Open-Meteo se aplicam ao produto?
-7. Há necessidade de oferecer outros idiomas além de pt-BR no futuro?
-8. A interface deve oferecer alguma forma aprovada de consulta offline ou apresentação de dados em cache?
+3. Há outros requisitos de desambiguação geográfica para países/regiões além de país obrigatório e estado/região quando disponível?
+4. A preferência de unidade deve persistir entre visitas? Essa preferência pode ser armazenada localmente no dispositivo?
+5. **Bloqueio de lançamento:** confirmar que os termos, limites de chamadas, cobertura e requisitos de atribuição do Open-Meteo permitem o uso pretendido.
+6. Há necessidade de oferecer outros idiomas além de pt-BR no futuro?
+7. A interface deve oferecer alguma forma aprovada de consulta offline ou apresentação de dados em cache?
