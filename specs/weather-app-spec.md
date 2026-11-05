@@ -17,12 +17,12 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 
 ## User Stories
 
-- **US1 — Consulta rápida:** como pessoa que decide o que vestir ou levar, quero pesquisar minha cidade e consultar as condições atuais para me preparar para sair.
-- **US2 — Planejamento:** como pessoa que planeja compromissos ou atividades, quero consultar a previsão dos próximos cinco dias para escolher quando realizá-los.
-- **US3 — Preferência de unidade:** como pessoa habituada a uma unidade específica, quero alternar entre Celsius e Fahrenheit para interpretar as temperaturas com facilidade.
-- **US4 — Uso em diferentes telas:** como pessoa que consulta o tempo em um celular ou computador, quero conseguir pesquisar e ler os dados sem perder conteúdo ou funcionalidade.
-- **US5 — Consulta em condições instáveis:** como pessoa em uma rede lenta ou sujeita a falhas, quero entender o estado da consulta e poder tentar novamente quando os dados não carregarem.
-- **US6 — Confiança nos dados:** como pessoa que toma decisões com base na previsão, quero ver a referência temporal dos dados para avaliar sua atualidade.
+- **US1 (RF1) — Busca de cidade:** Como pessoa que decide o que vestir, quero pesquisar e selecionar minha cidade para consultar os dados do local correto.
+- **US2 (RF2) — Condições atuais:** Como pessoa que decide o que vestir, quero ver as condições meteorológicas atuais da cidade selecionada para me preparar antes de sair.
+- **US3 (RF3) — Planejamento dos próximos dias:** Como pessoa que planeja a semana, quero consultar a previsão dos próximos cinco dias para organizar meus compromissos e atividades.
+- **US4 (RF4) — Unidade preferida:** Como pessoa que planeja a semana, quero alternar entre Celsius e Fahrenheit para interpretar as temperaturas na unidade que prefiro.
+- **US5 (RF5) — Recuperação de falhas:** Como pessoa que trabalha ou pratica atividades ao ar livre, quero entender quando uma consulta está carregando ou falhou e poder tentar novamente para obter os dados de que preciso.
+- **US6 (RF6) — Atualidade dos dados:** Como pessoa que trabalha ou pratica atividades ao ar livre, quero ver a data e o horário de referência dos dados para avaliar se eles são recentes o suficiente para minha decisão.
 
 ## Acceptance Criteria
 
