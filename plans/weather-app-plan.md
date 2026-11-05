@@ -104,6 +104,32 @@ Invariantes:
 6. A alternância C/F aplica a fórmula definida na spec e arredonda para inteiro mais próximo, com empates afastados de zero; não dispara nova consulta HTTP.
 7. O hook associa cada resposta à consulta/cidade que a originou. Resposta de requisição anterior não pode substituir os dados da seleção mais recente.
 
+```mermaid
+flowchart TD
+  A[Input de busca] --> B[Hook: estado loading da busca]
+  B --> C[Service de geocoding]
+  C --> D{Resultados}
+  D -->|Nenhum| E[Hook: estado empty]
+  E --> F[UI: estado sem resultados]
+  D -->|Falha de rede ou API| G[Hook: estado error da busca]
+  G --> H[UI: mensagem e ação de retry]
+  H --> B
+  D -->|Um resultado| I[Selecionar cidade automaticamente]
+  D -->|Vários resultados| J[UI: lista de cidades]
+  J --> K[Pessoa seleciona cidade]
+  I --> L[Hook: estado loading do forecast]
+  K --> L
+  L --> M[Service de forecast]
+  M --> N{Resposta}
+  N -->|Válida| O[Hook: estado success com WeatherData]
+  O --> P[UI: CurrentWeather e ForecastList]
+  N -->|Parcial| Q[Mapear campos ausentes como indisponíveis]
+  Q --> O
+  N -->|Falha de rede, API, timeout ou contrato inválido| R[Hook: estado error do forecast]
+  R --> S[UI: mensagem e ação de retry]
+  S --> L
+```
+
 ## External APIs
 
 ### Open-Meteo Geocoding
@@ -200,41 +226,65 @@ https://api.open-meteo.com/v1/forecast?latitude=38.7223&longitude=-9.1393&curren
 
 ## State Management
 
-Usar estado local do React, sem Redux, Context global ou persistência. Um único hook de orquestração mantém o estado da operação; a unidade C/F é estado de apresentação local e inicia em Celsius.
+Usar estado local do React, sem Redux, Context global ou persistência. `useWeather` controla o fluxo assíncrono e seus dados; `App` mantém somente a unidade C/F, que inicia em Celsius. A unidade é enviada como prop aos componentes e os valores convertidos são derivados durante a renderização, nunca armazenados como uma segunda cópia do clima.
 
-Contrato conceitual de estados discriminados:
+Os únicos estados explícitos do fluxo são `idle`, `loading`, `success`, `error` e `empty`. `operation` diferencia busca de cidade e consulta meteorológica sem criar status adicionais. Em `success` de busca, a lista de cidades fica disponível enquanto a pessoa escolhe; em `success` meteorológico, o estado contém `WeatherData`.
+
+Contrato conceitual:
 
 ```ts
+type Operation = 'search' | 'weather';
+
 type WeatherState =
   | { status: 'idle' }
-  | { status: 'searching'; query: string }
-  | { status: 'choosing-city'; query: string; cities: City[] }
-  | { status: 'loading-weather'; city: City }
-  | { status: 'ready'; data: WeatherData }
+  | {
+      status: 'loading';
+      operation: 'search';
+      query: string;
+    }
+  | {
+      status: 'loading';
+      operation: 'weather';
+      city: City;
+    }
+  | {
+      status: 'success';
+      operation: 'search';
+      query: string;
+      cities: City[]; // dois ou mais resultados aguardando seleção
+    }
+  | { status: 'success'; operation: 'weather'; data: WeatherData }
   | { status: 'empty'; query: string }
   | {
       status: 'error';
-      operation: 'search' | 'weather';
+      operation: 'search';
       message: string;
-      query?: string;
-      city?: City;
+      retryQuery: string;
+    }
+  | {
+      status: 'error';
+      operation: 'weather';
+      message: string;
+      retryCity: City;
     };
 ```
 
 - Busca vazia não inicia requisição.
-- Durante seleção múltipla, conservar e apresentar a lista de resultados em `CityResults` até a seleção.
-- `retry` reexecuta a operação que falhou, com o termo original ou as coordenadas selecionadas.
+- Para zero resultados, transicionar a busca para `empty`; para um único resultado, iniciar `loading` meteorológico automaticamente; para vários, transicionar a `success` de busca e manter os resultados em `CityResults` até a seleção.
+- `retry` reexecuta a operação discriminada pelo estado de erro, preservando `retryQuery` para busca ou `retryCity` para consulta meteorológica.
+- Converter temperaturas durante a renderização a partir de Celsius: $°F = (°C × 9/5) + 32$ e $°C = (°F − 32) × 5/9$. Arredondar para inteiro mais próximo, com empates afastados de zero. Alternar a unidade atualiza apenas o estado de apresentação e não dispara request.
 - Preferência de unidade não persiste entre recargas na v1.
 
 ## Error Handling
 
-- Aplicar timeout de 10 segundos a cada chamada com `AbortController`.
-- Distinguir resultados vazios de erro de rede, HTTP, JSON inválido, timeout e resposta de previsão sem envelope obrigatório.
-- Mostrar mensagem compreensível e ação de nova tentativa em falha; não expor stack trace, URLs com coordenadas ou detalhes internos.
-- Se um campo individual estiver ausente, manter o restante dos dados e mostrar esse campo como indisponível. Se o dia estiver ausente, manter a data correspondente nas cinco posições.
-- Em busca/seleção concorrente, cancelar a requisição anterior quando possível ou ignorar sua resposta por identificador monotônico; nunca exibir dados da cidade errada.
-- Dados com idade superior a 60 minutos, calculada a partir de `receivedAt` e `observedAtLocal` convertidos pelo deslocamento UTC, são identificados como desatualizados. Se faltar hora, fuso ou deslocamento, indicar atualidade não confirmada.
-- A nova tentativa é iniciada apenas por ação da pessoa; não implementar retry automático nem cache offline nesta versão.
+- **Rede:** falha de `fetch` vira `error` com mensagem de conexão e retry manual da mesma operação.
+- **HTTP/API:** resposta HTTP não bem-sucedida vira `error`; manter `operation` e contexto de retry. Falhas do provedor nunca são tratadas como resposta vazia.
+- **Timeout:** cada chamada é abortada aos 10 segundos e transiciona para `error`; a mensagem explica que demorou demais e permite retry manual. Não há retry automático.
+- **JSON/contrato inválido:** falha de parse ou ausência do envelope `current` ou `daily` transiciona para `error` meteorológico recuperável; uma busca sem `results` ou com `results: []` é `empty`, não erro.
+- **Resposta parcial:** métrica ou valor diário individual ausente/null vira `null` e é apresentado como indisponível, preservando os demais campos e as cinco datas. Não substituir campo ausente por zero. Se a data diária faltar, preencher a posição esperada no fuso local e manter as métricas dela indisponíveis.
+- **Referência temporal:** calcular idade usando `receivedAt`, `observedAtLocal` e `utcOffsetSeconds`. Acima de 60 minutos, identificar como desatualizado; se faltar horário, fuso ou deslocamento, marcar atualidade como não confirmada, sem inventar referência.
+- **Concorrência:** ao iniciar nova busca/seleção, abortar a chamada anterior quando possível e associar cada resultado à operação que o iniciou; ignorar respostas obsoletas para que não substituam a cidade mais recente.
+- Mensagens destinadas à pessoa não expõem stack trace, URLs com coordenadas ou detalhes internos.
 
 ## Testing Strategy
 
@@ -242,7 +292,7 @@ Derivar os testes da matriz de rastreabilidade na spec e nomeá-los com os IDs R
 
 - **Unitários:** normalização preservando pontuação; conversão C/F e casos de empate; arredondamento; formatação de datas; idade/fuso; mapeamento de todos os códigos WMO suportados e código desconhecido.
 - **Serviço:** parâmetros e mapeamento de ambas as APIs; zero resultados; resposta parcial com `null`; HTTP inválido; JSON inválido; timeout de 10 s; garantir que temperatura não é convertida no serviço.
-- **Componentes/hook:** estados idle, searching, choosing-city, loading-weather, ready, empty e error; seleção automática de resultado único; `CityResults` permite seleção manual de homônimo; retry preserva operação; troca de unidade não faz novo request; resposta obsoleta não substitui a cidade atual.
+- **Componentes/hook:** transições idle/loading/success/error/empty por operação; busca vazia, resultado único automático, múltiplos resultados em `success` de busca, retry preservando contexto; troca C/F não faz novo request; resposta obsoleta não substitui a cidade atual.
 - **E2E:** busca vazia, zero/um/vários resultados, consulta atual e cinco dias, troca C/F, falha e retry; repetir fluxos essenciais nos viewports definidos em RNF1 e navegadores de RNF7.
 - **Usabilidade:** conduzir teste moderado com pelo menos cinco participantes representando as personas; pelo menos quatro devem localizar uma cidade e identificar as condições atuais em até 30 segundos, e pelo menos quatro devem identificar os cinco dias e alternar a unidade em até 60 segundos, sem ajuda, conforme RNF2.
 - **Acessibilidade:** análise automatizada nos fluxos principais e verificação manual de teclado, foco e leitor de tela conforme RNF5.
