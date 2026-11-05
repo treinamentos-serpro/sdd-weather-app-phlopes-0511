@@ -12,7 +12,7 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 - **RF2 — Condições atuais:** após a seleção de uma cidade, exibir suas condições atuais, incluindo temperatura, descrição da condição meteorológica, umidade, vento, pressão e precipitação, quando esses dados estiverem disponíveis.
 - **RF3 — Previsão de cinco dias:** exibir a previsão diária da cidade selecionada para cinco dias consecutivos, incluindo hoje e os quatro dias seguintes, com temperatura mínima e máxima, condição meteorológica e precipitação, quando disponíveis.
 - **RF4 — Unidade de temperatura:** permitir alternar entre Celsius e Fahrenheit e atualizar todos os valores e rótulos de temperatura apresentados, tanto nas condições atuais quanto na previsão.
-- **RF5 — Estados e recuperação:** informar à pessoa quando uma busca ou consulta estiver carregando, quando não houver resultados e quando ocorrer uma falha; oferecer nova tentativa quando uma consulta de dados falhar.
+- **RF5 — Estados e recuperação:** informar à pessoa quando uma busca ou consulta estiver carregando, quando não houver resultados e quando uma busca ou consulta meteorológica falhar; oferecer nova tentativa correspondente quando houver falha ou timeout.
 - **RF6 — Referência temporal:** apresentar a data e o horário de referência dos dados meteorológicos atuais, de modo que a pessoa possa avaliar quando foram observados ou atualizados.
 
 ## User Stories
@@ -43,7 +43,11 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 - **Cenário RF1.4 — Busca vazia**
 	- **Given** o campo de busca está vazio ou contém apenas espaços
 	- **When** a pessoa tenta pesquisar
-	- **Then** nenhuma requisição de busca é enviada
+	- **Then** nenhuma requisição de busca é enviada e a interface informa que é necessário digitar o nome de uma cidade
+- **Cenário RF1.5 — Busca com e sem acentos**
+	- **Given** existe uma cidade cujo nome contém caracteres acentuados, como São Paulo
+	- **When** a pessoa pesquisa pelo nome com ou sem os acentos
+	- **Then** a busca retorna a cidade correspondente nos dois casos, desde que o serviço de geocoding a disponibilize
 
 **RF2 — Condições atuais**
 
@@ -96,14 +100,22 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 	- **Given** uma consulta meteorológica está em andamento para uma cidade selecionada
 	- **When** a rede ou o serviço retorna uma falha
 	- **Then** a interface informa que os dados não puderam ser carregados e exibe uma ação para tentar novamente
-- **Cenário RF5.3 — Tentar novamente**
-	- **Given** a interface exibe uma falha para a cidade selecionada
+- **Cenário RF5.3 — Falha no geocoding**
+	- **Given** uma busca de cidade está em andamento
+	- **When** a rede ou o serviço de geocoding retorna uma falha
+	- **Then** a interface informa que a busca não pôde ser concluída e exibe uma ação para tentar novamente, sem apresentar o estado de cidade não encontrada
+- **Cenário RF5.4 — Timeout**
+	- **Given** uma busca ou consulta meteorológica está em andamento
+	- **When** a requisição excede o limite de tempo configurado
+	- **Then** o carregamento é encerrado, a interface informa que a requisição demorou demais e oferece uma nova tentativa
+- **Cenário RF5.5 — Tentar novamente**
+	- **Given** a interface exibe uma falha ou timeout de busca ou consulta meteorológica
 	- **When** a pessoa aciona a ação de nova tentativa
-	- **Then** uma nova requisição meteorológica é enviada para a localização da cidade selecionada
-- **Cenário RF5.4 — Sem resultados não é erro**
+	- **Then** uma nova requisição do mesmo tipo da que falhou é enviada, mantendo o termo de busca ou a localização selecionada
+- **Cenário RF5.6 — Sem resultados não é erro**
 	- **Given** a requisição de busca termina com sucesso e retorna uma lista vazia
 	- **When** a interface apresenta o resultado
-	- **Then** é exibido o estado sem resultados, sem a mensagem ou ação de erro de consulta meteorológica
+	- **Then** é exibido o estado sem resultados, com orientação para revisar o termo, sem mensagem de falha ou ação de retry de erro de serviço
 
 **RF6 — Referência temporal**
 
@@ -133,15 +145,18 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 
 | Situação | Comportamento esperado |
 | --- | --- |
-| Busca vazia ou apenas com espaços | Não enviar consulta e manter clara a possibilidade de informar uma cidade. |
-| Cidade sem correspondência | Exibir estado sem resultados, sem reutilizar dados de uma consulta anterior como se fossem novos. |
+| Busca vazia ou apenas com espaços | Não enviar consulta e informar que é necessário digitar o nome de uma cidade. |
+| Cidade inexistente | Exibir que nenhuma cidade foi encontrada e permitir revisar o termo; não reutilizar dados meteorológicos de uma busca anterior. |
+| Geocoding concluído sem resultados | Tratar como estado sem resultados, distinto de falha do serviço; orientar a revisão do termo e permitir uma nova busca. |
 | Cidades homônimas | Distinguir resultados por estado/região e país quando essas informações forem fornecidas. |
-| Variações de acento ou caracteres especiais | Encaminhar o texto informado ao mecanismo de busca e exibir os resultados recebidos sem falhar a interface. O grau de normalização depende do serviço de geocoding e deve ser validado. |
-| Falha, timeout ou indisponibilidade da rede/API | Encerrar o estado de carregamento, explicar que a consulta falhou e disponibilizar nova tentativa. |
-| Resposta parcial ou métrica ausente | Indicar somente o dado ausente como indisponível e manter os demais dados utilizáveis. |
+| Variações de acento ou caracteres especiais | Permitir encontrar cidades com caracteres acentuados pesquisando o nome com ou sem acentos, quando o serviço de geocoding disponibilizar a cidade; não falhar nem limpar caracteres válidos do campo. |
+| Falha de geocoding/API | Encerrar o carregamento, informar que a busca falhou e oferecer nova tentativa mantendo o termo pesquisado; não tratar a falha como uma busca sem resultados. |
+| Falha da API meteorológica | Encerrar o carregamento, informar que os dados não puderam ser carregados e oferecer nova tentativa para a cidade selecionada. |
+| Timeout | Encerrar o carregamento ao exceder o limite configurado, informar que a requisição demorou demais e oferecer nova tentativa. |
+| Resposta parcial ou métrica ausente | Indicar cada dado ausente como indisponível, exibir os demais dados recebidos e não inventar valores. |
 | Seleção de outra cidade enquanto há consulta em andamento | Não apresentar a resposta anterior como pertencente à cidade recém-selecionada; ao concluir, os dados devem corresponder à seleção mais recente. |
 | Mudança de unidade durante consulta em andamento | Aplicar a unidade selecionada quando os dados forem apresentados, sem misturar Celsius e Fahrenheit. |
-| Previsão incompleta | Não inventar dias ou valores ausentes; indicar a indisponibilidade e permitir que o estado de erro ou incompletude seja compreendido. |
+| Previsão incompleta | Exibir somente os dias recebidos, indicar os dados ausentes como indisponíveis e não inventar dias, valores ou condições. |
 | Referência temporal ausente ou antiga | Não inventar horário; a sinalização e o limite para dados antigos dependem da decisão pendente sobre atualidade. |
 
 ## Assumptions
@@ -184,12 +199,12 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 1. Quem é o público-alvo prioritário e quais métricas de negócio determinarão o sucesso do produto?
 2. Quais campos de condições atuais são indispensáveis além dos campos propostos nesta especificação?
 3. Como definir o fuso horário para a data dos dias previstos e para a referência temporal: fuso da cidade ou do dispositivo?
-4. A busca deve oferecer sugestões enquanto a pessoa digita, aceitar correspondências parciais e tolerar erros de digitação? Quais são as expectativas para acentos e caracteres especiais?
+4. A busca deve oferecer sugestões enquanto a pessoa digita, aceitar correspondências parciais e tolerar erros de digitação?
 5. Quais informações geográficas devem desambiguar cidades em todos os países e regiões suportados?
 6. Qual é a idade máxima aceitável dos dados, com que frequência devem ser atualizados e como dados antigos devem ser sinalizados?
 7. A preferência de unidade deve persistir entre visitas? Essa preferência pode ser armazenada localmente no dispositivo?
 8. Quais termos, limites de chamadas, cobertura e requisitos de atribuição do Open-Meteo se aplicam ao produto?
 9. Qual matriz de navegadores, sistemas operacionais e dispositivos deve ser suportada?
-10. Quais condições e critérios quantitativos serão usados para validar usabilidade, performance, disponibilidade e rede?
+10. Quais condições e critérios quantitativos serão usados para validar usabilidade, performance, disponibilidade e rede? Qual será o limite máximo de espera antes de tratar uma requisição como timeout?
 11. Como devem ser formatados datas, horários e números em pt-BR, e há necessidade de oferecer outros idiomas no futuro?
 12. A interface deve oferecer alguma forma aprovada de consulta offline ou apresentação de dados em cache?
