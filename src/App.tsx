@@ -73,14 +73,14 @@ export default function App() {
   return (
     <div className="min-h-screen text-white">
       <header className="border-b border-white/10">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2">
             <span aria-hidden="true" className="text-2xl text-sun">
               ☀️
             </span>
-            <span className="text-lg font-bold">WeatherView</span>
+            <h1 className="text-lg font-bold">WeatherView</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
             <SearchBar onSearch={search} disabled={state.status === 'loading'} />
             <UnitToggle unit={unit} onChange={setUnit} />
           </div>
@@ -120,7 +120,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="py-8 text-center text-sm text-white/40">
+      <footer className="py-8 text-center text-sm text-white/70">
         Dados de demonstração
       </footer>
     </div>

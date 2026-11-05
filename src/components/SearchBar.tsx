@@ -17,9 +17,9 @@ export default function SearchBar({ onSearch, disabled }: SearchBarProps) {
   }
 
   return (
-    <form role="search" onSubmit={handleSubmit} className="w-full max-w-md">
+    <form role="search" onSubmit={handleSubmit} className="w-full min-w-0 max-w-md sm:flex-1 sm:max-w-md">
       <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-md focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-accent-500 focus-within:ring-offset-2 focus-within:ring-offset-night-900">
-        <span aria-hidden="true" className="text-white/50">
+        <span aria-hidden="true" className="text-white/70">
           🔍
         </span>
         <label htmlFor="city-search" className="sr-only">
@@ -33,12 +33,12 @@ export default function SearchBar({ onSearch, disabled }: SearchBarProps) {
           placeholder="Buscar cidade…"
           autoComplete="off"
           disabled={disabled}
-          className="flex-1 bg-transparent text-white placeholder-white/40 outline-none"
+          className="min-w-0 flex-1 bg-transparent text-white placeholder-white/70 outline-none"
         />
         <button
           type="submit"
           disabled={disabled || !value.trim()}
-          className="rounded-lg bg-accent-500 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="shrink-0 rounded-lg bg-accent-500 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-accent-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-night-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Buscar
         </button>

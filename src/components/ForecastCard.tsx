@@ -20,13 +20,13 @@ export default function ForecastCard({ day, index, unit }: ForecastCardProps) {
       : `${day.precipitationProbabilityMaxPercent}%`;
 
   return (
-    <li className="flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-4 text-center backdrop-blur-md">
+    <li className="flex min-w-0 flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-center backdrop-blur-md sm:p-4">
       <p className="font-semibold">{getDayLabel(day.date, index)}</p>
-      <p className="text-xs text-white/50">{getShortDate(day.date)}</p>
+      <p className="text-xs text-white/70">{getShortDate(day.date)}</p>
       <span aria-hidden="true" className="text-3xl" title={weatherLabel}>
         {weatherIcon}
       </span>
-      <p className="text-xs text-white/60">{weatherLabel}</p>
+      <p className="break-words text-xs text-white/70">{weatherLabel}</p>
       <p className="text-sm">
         <span className="font-semibold">
           {day.maxTemperatureC === null ? '—' : formatTemperature(day.maxTemperatureC, unit)}
