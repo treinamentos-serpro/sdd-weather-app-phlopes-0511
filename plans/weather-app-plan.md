@@ -53,13 +53,13 @@ type WeatherValue<T> = T | null;
 interface City {
   id: number;
   name: string;
-  country: string;
+  country: string | null;
   region: string | null;
   latitude: number;
   longitude: number;
 }
 
-interface CurrentConditions {
+interface CurrentWeather {
   temperatureC: WeatherValue<number>;
   weatherCode: WeatherValue<number>;
   humidityPercent: WeatherValue<number>;
@@ -67,8 +67,6 @@ interface CurrentConditions {
   pressureHpa: WeatherValue<number>;
   precipitationMm: WeatherValue<number>;
   observedAtLocal: string | null;
-  timezone: string | null;
-  utcOffsetSeconds: number | null;
 }
 
 interface ForecastDay {
@@ -81,8 +79,10 @@ interface ForecastDay {
 
 interface WeatherData {
   city: City;
-  current: CurrentConditions;
+  current: CurrentWeather;
   forecast: ForecastDay[]; // cinco posições de calendário, inclusive posições indisponíveis
+  timezone: string | null; // fuso IANA retornado pelo endpoint
+  utcOffsetSeconds: number | null; // deslocamento UTC retornado pelo endpoint
   receivedAt: string; // instante ISO UTC usado para avaliar a idade da observação
 }
 ```
@@ -92,7 +92,7 @@ Invariantes:
 - Temperaturas permanecem em Celsius no modelo interno; a unidade escolhida só altera apresentação.
 - `forecast` mantém cinco posições ordenadas por data local; se o provedor não retornar uma data ou métrica, a posição/campo permanece e recebe `null`.
 - A descrição do tempo é derivada de `weatherCode` pela tabela de interpretação WMO; códigos não mapeados usam “Condição desconhecida”.
-- `observedAtLocal`, `timezone` e `utcOffsetSeconds` vêm da resposta meteorológica. Um campo ausente não deve ser inventado; a atualidade fica não confirmada quando faltarem os dados necessários.
+- `observedAtLocal` vem de `current.time`; `timezone` e `utcOffsetSeconds` vêm da raiz da resposta meteorológica. Um campo ausente não deve ser inventado; a atualidade fica não confirmada quando faltarem os dados necessários.
 
 ## Data Flow
 
@@ -108,17 +108,93 @@ Invariantes:
 
 ### Open-Meteo Geocoding
 
-- **Endpoint:** `GET https://geocoding-api.open-meteo.com/v1/search`.
-- **Parâmetros:** `name` normalizado, `count=5`, `language=pt`, `format=json`.
-- **Mapeamento:** `id`, `name`, `country`, `admin1`, `latitude`, `longitude` para `City`; `admin1` é opcional.
-- Uma resposta válida sem resultados é estado vazio. HTTP não bem-sucedido, rede, JSON inválido ou timeout são erros de busca, nunca “cidade não encontrada”.
+- **URL base:** `https://geocoding-api.open-meteo.com/v1/search`.
+- **Método:** `GET`.
+- **Parâmetros relevantes:** `name` é o termo normalizado; `count=5` limita os resultados; `language=pt` solicita nomes/localização em português; `format=json` solicita JSON. Os parâmetros `current`, `daily` e `timezone` não se aplicam a este endpoint.
+- **Exemplo de URL:** `https://geocoding-api.open-meteo.com/v1/search?name=lisboa&count=5&language=pt&format=json`.
+- **Exemplo resumido de resposta** (valores ilustrativos):
+
+```json
+{
+  "results": [
+    {
+      "id": 123456,
+      "name": "Lisboa",
+      "latitude": 38.7223,
+      "longitude": -9.1393,
+      "country_code": "PT",
+      "country": "Portugal",
+      "admin1": "Lisboa"
+    }
+  ]
+}
+```
+
+- **Mapeamento para `City`:** `id` → `id`; `name` → `name`; `country` → `country`; `admin1` → `region`; `latitude` → `latitude`; `longitude` → `longitude`. `country` e `admin1` ausentes viram `null`; não inferir país ou região. Ignorar campos sem uso no modelo, como `country_code`.
+- Uma resposta válida sem `results` ou com lista vazia representa busca sem resultados. HTTP não bem-sucedido, rede, JSON inválido ou timeout representam erro de busca, nunca “cidade não encontrada”.
 
 ### Open-Meteo Forecast
 
-- **Endpoint:** `GET https://api.open-meteo.com/v1/forecast`.
-- **Parâmetros:** latitude/longitude selecionadas; `current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,precipitation,weather_code`; `daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max`; `forecast_days=5`; `timezone=auto`; `temperature_unit=celsius`.
-- **Unidades de domínio:** temperatura °C, umidade %, velocidade do vento km/h, pressão hPa, precipitação atual mm e probabilidade máxima diária de precipitação %.
-- **Referência temporal:** usar `timezone`, `utc_offset_seconds` e hora local retornados pelo endpoint; não assumir o fuso do dispositivo.
+- **URL base:** `https://api.open-meteo.com/v1/forecast`.
+- **Método:** `GET`.
+- **Parâmetros relevantes:** `latitude` e `longitude` da cidade selecionada; `current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,precipitation,weather_code`; `daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max`; `forecast_days=5`; `timezone=auto`; `temperature_unit=celsius`; `wind_speed_unit=kmh`; `precipitation_unit=mm`. `current` e `daily` definem os campos retornados; `timezone` faz as datas diárias seguirem o fuso da cidade.
+- **Exemplo de URL:**
+
+```text
+https://api.open-meteo.com/v1/forecast?latitude=38.7223&longitude=-9.1393&current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,precipitation,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=5&timezone=auto&temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm
+```
+
+- **Exemplo resumido de resposta** (arrays reduzidos a cinco dias; valores ilustrativos):
+
+```json
+{
+  "latitude": 38.72,
+  "longitude": -9.14,
+  "utc_offset_seconds": 0,
+  "timezone": "Europe/Lisbon",
+  "timezone_abbreviation": "WET",
+  "current_units": {
+    "time": "iso8601",
+    "temperature_2m": "°C",
+    "relative_humidity_2m": "%",
+    "wind_speed_10m": "km/h",
+    "surface_pressure": "hPa",
+    "precipitation": "mm",
+    "weather_code": "wmo code"
+  },
+  "current": {
+    "time": "2026-11-05T10:00",
+    "temperature_2m": 18.4,
+    "relative_humidity_2m": 72,
+    "wind_speed_10m": 11.5,
+    "surface_pressure": 1013.2,
+    "precipitation": 0,
+    "weather_code": 2
+  },
+  "daily_units": {
+    "time": "iso8601",
+    "weather_code": "wmo code",
+    "temperature_2m_max": "°C",
+    "temperature_2m_min": "°C",
+    "precipitation_probability_max": "%"
+  },
+  "daily": {
+    "time": ["2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09"],
+    "weather_code": [2, 3, 61, 3, 0],
+    "temperature_2m_max": [19.1, 18.4, 17.2, 18.0, 20.1],
+    "temperature_2m_min": [13.2, 12.8, 12.1, 11.9, 12.5],
+    "precipitation_probability_max": [10, 20, null, 45, 5]
+  }
+}
+```
+
+- **Mapeamento para `WeatherData`:**
+  - `city` é o `City` selecionado; `receivedAt` é criado pelo cliente no recebimento da resposta, em ISO UTC.
+  - `current.temperature_2m` → `current.temperatureC`; `weather_code` → `current.weatherCode`; `relative_humidity_2m` → `current.humidityPercent`; `wind_speed_10m` → `current.windSpeedKmh`; `surface_pressure` → `current.pressureHpa`; `precipitation` → `current.precipitationMm`; `current.time` → `current.observedAtLocal`.
+  - A raiz `timezone` e `utc_offset_seconds` → `WeatherData.timezone` e `WeatherData.utcOffsetSeconds`, respectivamente. Não usar `timezone_abbreviation` como substituto do deslocamento UTC.
+  - Para cada índice `i` de `daily.time`, criar `forecast[i]`: `time[i]` → `date`; `weather_code[i]` → `weatherCode`; `temperature_2m_min[i]` → `minTemperatureC`; `temperature_2m_max[i]` → `maxTemperatureC`; `precipitation_probability_max[i]` → `precipitationProbabilityMaxPercent`. Arrays são paralelos e devem ser lidos pelo mesmo índice, não por posição após filtragem.
+  - `null` ou campo ausente em uma métrica → `null` no modelo; não converter ausência em zero. Manter cinco posições. Se a resposta diária não fornecer uma data, construir a data esperada no fuso da cidade para essa posição e deixar as métricas indisponíveis; se o envelope `current` ou `daily` inteiro estiver ausente, tratar como erro recuperável.
+- **Unidades:** temperatura °C, umidade %, velocidade do vento km/h, pressão hPa, precipitação atual mm e probabilidade máxima diária de precipitação %. Validar as unidades retornadas (`current_units`/`daily_units`) antes do mapeamento.
 - **Limite de espera:** 10 segundos por requisição. Não há retry automático; a pessoa pode acionar retry, que repete a mesma operação com o mesmo termo ou cidade.
 - **Contrato externo:** não usar chave de API. Confirmar termos, atribuição, cobertura e limites de chamadas antes de lançamento público; essa validação é gate de release.
 
@@ -168,6 +244,7 @@ Derivar os testes da matriz de rastreabilidade na spec e nomeá-los com os IDs R
 - **Serviço:** parâmetros e mapeamento de ambas as APIs; zero resultados; resposta parcial com `null`; HTTP inválido; JSON inválido; timeout de 10 s; garantir que temperatura não é convertida no serviço.
 - **Componentes/hook:** estados idle, searching, choosing-city, loading-weather, ready, empty e error; seleção automática de resultado único; `CityResults` permite seleção manual de homônimo; retry preserva operação; troca de unidade não faz novo request; resposta obsoleta não substitui a cidade atual.
 - **E2E:** busca vazia, zero/um/vários resultados, consulta atual e cinco dias, troca C/F, falha e retry; repetir fluxos essenciais nos viewports definidos em RNF1 e navegadores de RNF7.
+- **Usabilidade:** conduzir teste moderado com pelo menos cinco participantes representando as personas; pelo menos quatro devem localizar uma cidade e identificar as condições atuais em até 30 segundos, e pelo menos quatro devem identificar os cinco dias e alternar a unidade em até 60 segundos, sem ajuda, conforme RNF2.
 - **Acessibilidade:** análise automatizada nos fluxos principais e verificação manual de teclado, foco e leitor de tela conforme RNF5.
 - **Metas operacionais:** medir os percentis de RNF4 sob o perfil de rede definido; executar verificações sintéticas de RNF6 a cada cinco minutos. Testes automatizados não devem depender de chamadas reais não determinísticas; usar fixtures para unitários/E2E e manter a verificação sintética separada.
 - **Gate do projeto:** `pnpm lint`, `pnpm build`, `pnpm test` e, para a cobertura E2E, `pnpm test:e2e`.
