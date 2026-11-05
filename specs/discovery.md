@@ -29,13 +29,20 @@ As metas quantitativas acima são propostas iniciais para tornar os requisitos v
 
 ## Riscos
 
-| Risco | Probabilidade | Impacto | Mitigação inicial |
-| --- | --- | --- | --- |
-| Busca retorna cidades homônimas ou resultados inesperados | Média | Médio | Definir como identificar e distinguir resultados, por exemplo, com estado/região e país. |
-| Fonte de dados indisponível, lenta ou sujeita a limites de uso | Média | Alto | Escolher e validar a fonte; definir tratamento de falhas e limites de uso. |
-| Interpretação divergente do período de cinco dias | Média | Médio | Confirmar se a contagem inclui o dia atual e qual granularidade da previsão é necessária. |
-| Conversão ou apresentação incorreta das unidades | Baixa | Alto | Definir o comportamento de alternância e validar os valores e rótulos nas duas unidades. |
-| Interface difícil de usar em telas pequenas | Média | Médio | Validar os fluxos principais em dispositivos e tamanhos de tela móveis. |
+| Tipo | Risco | Probabilidade | Impacto | Estratégia de mitigação |
+| --- | --- | --- | --- | --- |
+| Técnico | Indisponibilidade, lentidão ou limite de requisições do provedor meteorológico | Média | Alto: consultas podem falhar ou demorar; limites podem restringir o uso. | Validar cobertura, limites, custos e disponibilidade do provedor; tratar erros e timeouts; oferecer nova tentativa e avaliar cache com indicação da idade dos dados. |
+| Técnico | Dados desatualizados ou associados ao fuso horário errado | Média | Alto: o usuário pode tomar decisões com informações incorretas ou antigas. | Definir limite de idade dos dados, usar o fuso da cidade consultada e exibir o horário de referência. |
+| Produto | Interpretação ambígua de “previsão de cinco dias” | Alta | Médio: o resultado pode não corresponder à expectativa sobre incluir hoje ou mostrar dados horários. | Definir período, granularidade e fuso antes de fechar os critérios de aceite. |
+| Produto | Busca retorna uma cidade homônima ou resultado incorreto | Média | Alto: a consulta pode exibir a previsão de outro local. | Diferenciar resultados por região/estado e país; testar nomes ambíguos e buscas com variações de acento. |
+| Produto | O conteúdo exibido não atende ao que usuários entendem por “clima atual” | Média | Médio: a consulta pode parecer incompleta apesar de funcionar tecnicamente. | Definir quais métricas serão exibidas e validar a apresentação com usuários ou representantes do negócio. |
+| Técnico | Conversão ou rótulo de Celsius/Fahrenheit incorreto ou inconsistente | Baixa | Alto: valores podem ser interpretados de forma errada. | Centralizar conversão e formatação; testar as duas unidades em todos os valores e componentes que exibem temperatura. |
+| Técnico | Falhas em redes lentas, sem conexão ou durante indisponibilidade da API | Média | Alto: o usuário pode ficar sem dados e sem saber como prosseguir. | Implementar estados de carregamento, erro e ausência de resultados; permitir nova tentativa e, se aprovado, mostrar cache claramente identificado como antigo. |
+| Produto / Técnico | Experiência móvel inadequada em telas pequenas ou dispositivos diferentes | Média | Alto: busca e leitura da previsão podem ficar difíceis ou indisponíveis. | Testar fluxos essenciais em tamanhos de tela e navegadores definidos; validar teclado, leitores de tela e contraste. |
+| Técnico | Meta de disponibilidade não ser atingida por dependência externa | Média | Alto: mesmo com o app operacional, a consulta pode ficar indisponível quando o provedor falhar. | Definir disponibilidade ponta a ponta e dependências cobertas pela meta; monitorar falhas e oferecer tratamento degradado compreensível. |
+| Produto / Técnico | Uso de localização ou histórico sem decisão clara de privacidade | Baixa/Média | Alto: coleta desnecessária pode reduzir confiança e gerar obrigações legais. | Minimizar dados coletados, obter permissão antes de usar localização e definir finalidade e retenção. |
+
+As probabilidades são estimativas iniciais e devem ser revistas após a escolha do provedor e a definição do escopo.
 
 ## Perguntas em Aberto
 
