@@ -6,6 +6,16 @@ A empresa deseja uma aplicação de previsão do tempo para que usuários consul
 
 O briefing não define público-alvo, plataforma além do requisito de uso móvel, fonte dos dados meteorológicos, localização geográfica inicial nem critérios quantitativos de qualidade. Esses pontos precisam ser esclarecidos antes do detalhamento da solução.
 
+## Personas
+
+As personas abaixo são hipóteses iniciais derivadas do briefing e devem ser validadas com usuários.
+
+| Persona | Objetivo principal | Contexto de uso | Métrica de sucesso do ponto de vista da persona |
+| --- | --- | --- | --- |
+| Pessoa que decide o que vestir | Consultar rapidamente a temperatura e as condições atuais para decidir o que vestir ou se deve levar guarda-chuva. | Principalmente mobile, antes de sair de casa ou durante deslocamentos. | Encontra a cidade e entende as condições atuais em até 30 segundos, sem precisar repetir a busca. |
+| Pessoa que planeja a semana | Consultar a previsão de cinco dias para organizar compromissos, viagens ou atividades. | Desktop para planejar com mais calma; mobile para consultar novamente. | Identifica as condições e datas da previsão de cinco dias e consegue escolher a unidade de temperatura que prefere. |
+| Pessoa que trabalha ou pratica atividades ao ar livre | Verificar as condições meteorológicas de um local antes de decidir quando ou como realizar uma atividade. | Principalmente mobile, em diferentes locais e possivelmente com conexão instável. | Confirma que consultou a cidade correta, identifica quando os dados foram atualizados e conclui a consulta quando a conexão está disponível. |
+
 ## Requisitos Funcionais
 
 - **RF1 — Busca de cidades:** permitir que o usuário pesquise cidades para consultar seus dados meteorológicos.
