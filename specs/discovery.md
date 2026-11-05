@@ -39,15 +39,33 @@ As metas quantitativas acima são propostas iniciais para tornar os requisitos v
 
 ## Perguntas em Aberto
 
-1. Qual fonte de dados meteorológicos deve ser utilizada e há restrições de custo, licença ou volume de chamadas?
-2. A busca deve sugerir resultados enquanto o usuário digita? Como resultados homônimos devem ser diferenciados?
-3. Quais informações compõem o “clima atual” e cada item da previsão (por exemplo, temperatura mínima/máxima, condição, precipitação ou vento)?
-4. Os cinco dias incluem o dia atual ou correspondem aos cinco dias seguintes? A previsão deve ser diária ou horária?
-5. Qual deve ser a unidade inicial e a seleção deve ser mantida entre visitas ou sessões?
-6. A aplicação deve inferir a localização do usuário, ou a consulta começa somente após uma busca explícita?
-7. Quais idiomas e navegadores devem ser suportados? As metas propostas de responsividade, desempenho, disponibilidade e acessibilidade são adequadas?
-8. Qual é a idade máxima aceitável para os dados meteorológicos e como deve ser definida a disponibilidade considerando falhas do provedor externo?
-9. É necessário oferecer favoritos, histórico de buscas, uso sem conexão ou outros recursos além dos descritos no briefing?
+| Tema | Pergunta em aberto | Impacto de seguir sem resposta |
+| --- | --- | --- |
+| Público-alvo | Quem usará o app e em quais situações? | A interface e as informações podem não atender às necessidades reais dos usuários. |
+| Objetivo de negócio | Como será medido o sucesso do produto? | Faltará critério para priorizar funcionalidades e avaliar se o app resolveu o problema. |
+| Plataforma | O app será web responsivo, PWA ou nativo para celular? | A escolha altera tecnologia, custos, distribuição, manutenção e acesso a recursos do dispositivo. |
+| Busca de cidades | A busca deve aceitar nomes parciais, acentos e erros de digitação? Deve sugerir resultados enquanto o usuário digita? | Implementações diferentes podem frustrar usuários ou produzir resultados inesperados. |
+| Cidades homônimas | Como distinguir cidades com o mesmo nome: país, estado, região ou código postal? | O usuário pode consultar a previsão da cidade errada. |
+| Localização | O app deve usar a localização do dispositivo ou somente cidades pesquisadas manualmente? | Afeta o primeiro acesso, permissões, privacidade e comportamento quando o usuário recusa a localização. |
+| Clima atual | Quais informações devem ser exibidas além da temperatura, como condição, sensação térmica, vento ou umidade? | “Clima atual” pode resultar em telas e integrações com escopos muito diferentes. |
+| Previsão de cinco dias | Os cinco dias incluem hoje? A previsão será diária ou horária? | Altera os dados necessários e a forma como datas e previsões serão apresentadas. |
+| Fuso horário | As datas e horas seguem o fuso da cidade consultada ou do dispositivo do usuário? | A previsão pode ser associada ao dia ou horário incorreto, especialmente em viagens. |
+| Fonte dos dados | Qual provedor será usado? Há restrições de custo, licença, cobertura ou atribuição? | Pode haver custos ou limitações de uso, cobertura e qualidade descobertos tarde demais. |
+| Atualização dos dados | Com que frequência as condições devem ser atualizadas? Qual atraso máximo é aceitável? | O app pode mostrar dados antigos como se fossem atuais, reduzindo confiança e utilidade. |
+| Unidades | Qual unidade é padrão? A alternância afeta apenas temperatura ou também vento, chuva e pressão? | Usuários podem receber valores em unidades inesperadas ou inconsistentes. |
+| Persistência | A unidade selecionada, cidades favoritas ou buscas recentes devem ser lembradas? | A experiência pode exigir repetição de ações ou ganhar escopo de armazenamento sem aprovação. |
+| Falhas e estados vazios | O que mostrar se não houver resultados, a API falhar, a rede cair ou o limite de requisições for atingido? | Usuários podem ficar sem explicação ou sem uma forma de tentar novamente. |
+| Uso offline | O app deve exibir dados em cache sem conexão? Por quanto tempo? | Sem decisão, não há expectativa clara sobre disponibilidade nem sobre a validade dos dados armazenados. |
+| Idioma e formatos | O app será apenas em português? Como formatar datas, horários e números? | Textos e formatos podem não corresponder à região ou à preferência do usuário. |
+| Dispositivos e navegadores | Quais tamanhos de tela, sistemas e navegadores precisam ser suportados? | Não será possível definir uma matriz de testes nem confirmar compatibilidade. |
+| Acessibilidade | Quais requisitos de acessibilidade devem ser atendidos? | Pessoas que usam teclado ou tecnologias assistivas podem não conseguir completar os fluxos. |
+| Desempenho | Qual tempo máximo aceitável para abrir o app, buscar uma cidade e carregar a previsão? | “Rápido” fica subjetivo e problemas de latência podem passar sem detecção. |
+| Disponibilidade | Qual disponibilidade é esperada e como a indisponibilidade do provedor externo será tratada? | Não há meta de continuidade nem expectativa clara quando os dados não puderem ser obtidos. |
+| Privacidade | Serão coletados localização, histórico ou dados de uso? Para qual finalidade e por quanto tempo? | Pode haver coleta desnecessária, perda de confiança e obrigações legais não consideradas. |
+| Segurança | Há requisitos específicos para dados armazenados ou serviços integrados? | Controles necessários podem ser negligenciados ou descobertos apenas perto da entrega. |
+| Escopo adicional | Favoritos, alertas, mapas, notificações ou widgets fazem parte da primeira versão ou estão fora dela? | O escopo pode crescer por expectativas implícitas ou funcionalidades essenciais podem ficar de fora. |
+
+As decisões que mais condicionam o escopo inicial são plataforma, fonte de dados, conteúdo do clima atual, definição dos cinco dias, busca de cidades, localização e tratamento de falhas.
 
 ## Suposições
 
