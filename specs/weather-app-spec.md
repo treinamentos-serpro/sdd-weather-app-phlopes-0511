@@ -26,45 +26,95 @@ O produto atende principalmente pessoas que precisam conferir rapidamente o temp
 
 ## Acceptance Criteria
 
-Os critérios abaixo são associados diretamente aos requisitos funcionais para permitir verificação independente.
-
 **RF1 — Busca e seleção de cidade**
 
-- Dado um nome de cidade com resultados disponíveis, quando a pessoa realiza a busca, então são apresentados os locais correspondentes com cidade e informação geográfica de desambiguação, como estado/região e país quando disponíveis.
-- Dada uma lista de resultados, quando a pessoa seleciona um local, então a consulta meteorológica passa a corresponder ao local selecionado.
-- Dado um nome sem resultados, quando a busca termina, então a interface informa que nenhuma cidade foi encontrada e não apresenta dados de outra cidade como resultado da busca.
-- Dado um campo de busca vazio ou contendo apenas espaços, quando a pessoa tenta pesquisar, então nenhuma consulta de cidade é enviada.
+- **Cenário RF1.1 — Exibir resultados desambiguados**
+	- **Given** o serviço de busca retorna uma ou mais cidades com nomes e informações de região/estado e país
+	- **When** a pessoa pesquisa por um desses nomes
+	- **Then** cada resultado exibe o nome da cidade e as informações de região/estado e país retornadas pelo serviço
+- **Cenário RF1.2 — Selecionar cidade**
+	- **Given** a busca exibe mais de uma cidade correspondente
+	- **When** a pessoa seleciona um resultado específico
+	- **Then** a consulta meteorológica é feita usando a localização do resultado selecionado
+- **Cenário RF1.3 — Busca sem resultados**
+	- **Given** o serviço de busca retorna uma lista vazia para o termo informado
+	- **When** a busca termina
+	- **Then** a interface informa que nenhuma cidade foi encontrada e não apresenta dados meteorológicos como resultado daquela busca
+- **Cenário RF1.4 — Busca vazia**
+	- **Given** o campo de busca está vazio ou contém apenas espaços
+	- **When** a pessoa tenta pesquisar
+	- **Then** nenhuma requisição de busca é enviada
 
 **RF2 — Condições atuais**
 
-- Dada uma cidade selecionada e uma resposta válida do serviço, quando os dados carregam, então a interface apresenta a temperatura, a condição, a umidade, o vento, a pressão e a precipitação fornecidos para as condições atuais.
-- Dada uma métrica ausente na resposta, quando as condições atuais são exibidas, então o campo ausente é indicado como indisponível e os demais dados permanecem visíveis.
-- Dada uma cidade diferente selecionada, quando a consulta termina, então os dados exibidos correspondem à cidade selecionada mais recentemente.
+- **Cenário RF2.1 — Exibir condições atuais**
+	- **Given** uma cidade selecionada e uma resposta de condições atuais contendo temperatura, condição, umidade, vento, pressão e precipitação
+	- **When** a consulta termina com sucesso
+	- **Then** a interface exibe cada um desses seis dados com o valor correspondente à resposta e associado à cidade selecionada
+- **Cenário RF2.2 — Campo atual ausente**
+	- **Given** uma cidade selecionada e uma resposta de condições atuais sem um dos seis dados previstos
+	- **When** a consulta termina com sucesso
+	- **Then** o dado ausente é indicado como indisponível e os demais dados recebidos são exibidos
+- **Cenário RF2.3 — Respostas de cidades diferentes**
+	- **Given** há uma consulta em andamento para uma cidade e a pessoa seleciona outra cidade antes de a primeira consulta terminar
+	- **When** as consultas terminam
+	- **Then** as condições atuais exibidas correspondem à cidade selecionada mais recentemente e não são identificadas como pertencentes à outra cidade
 
 **RF3 — Previsão de cinco dias**
 
-- Dada uma cidade selecionada e uma resposta válida de previsão, quando os dados carregam, então são exibidos exatamente cinco dias consecutivos, começando pelo dia atual e incluindo os quatro dias seguintes.
-- Para cada dia disponível, a interface apresenta data, temperaturas mínima e máxima, condição meteorológica e precipitação.
-- Dada uma métrica ausente para um dia, quando a previsão é exibida, então a métrica é indicada como indisponível sem impedir a leitura dos outros dias.
+- **Cenário RF3.1 — Exibir cinco dias**
+	- **Given** uma cidade selecionada e uma resposta de previsão com dados para hoje e os quatro dias seguintes
+	- **When** a consulta termina com sucesso
+	- **Then** a interface exibe exatamente cinco dias consecutivos, começando por hoje, cada um com a data, temperatura mínima, temperatura máxima, condição meteorológica e precipitação da resposta
+- **Cenário RF3.2 — Campo de previsão ausente**
+	- **Given** uma resposta de previsão em que um dos dados está ausente para um dos dias
+	- **When** a previsão é exibida
+	- **Then** o dado ausente daquele dia é indicado como indisponível e os demais dados e dias recebidos permanecem visíveis
 
 **RF4 — Unidade de temperatura**
 
-- Dada a interface exibindo temperaturas em Celsius, quando a pessoa seleciona Fahrenheit, então todas as temperaturas atuais e previstas e seus rótulos passam a representar Fahrenheit.
-- Dada a interface exibindo temperaturas em Fahrenheit, quando a pessoa seleciona Celsius, então todas as temperaturas atuais e previstas e seus rótulos passam a representar Celsius.
-- A alternância de unidade atualiza os valores apresentados sem iniciar uma nova consulta meteorológica.
-- Em qualquer unidade selecionada, nenhum valor de temperatura visível permanece rotulado ou formatado na outra unidade.
+- **Cenário RF4.1 — Converter Celsius para Fahrenheit**
+	- **Given** as temperaturas atuais e previstas estão em Celsius, incluindo os valores de teste 0 °C, -10 °C e 20 °C
+	- **When** a pessoa seleciona Fahrenheit
+	- **Then** todos os valores e rótulos passam a Fahrenheit, com esses valores exibidos como 32 °F, 14 °F e 68 °F, respectivamente
+- **Cenário RF4.2 — Converter Fahrenheit para Celsius**
+	- **Given** as temperaturas atuais e previstas estão em Fahrenheit, incluindo os valores de teste 32 °F, 14 °F e 68 °F
+	- **When** a pessoa seleciona Celsius
+	- **Then** todos os valores e rótulos passam a Celsius, com esses valores exibidos como 0 °C, -10 °C e 20 °C, respectivamente
+- **Cenário RF4.3 — Alternar sem nova consulta**
+	- **Given** as condições atuais e a previsão já foram carregadas
+	- **When** a pessoa alterna a unidade de temperatura
+	- **Then** os valores são atualizados na interface sem uma nova requisição meteorológica
 
 **RF5 — Estados e recuperação**
 
-- Dada uma busca ou consulta em andamento, quando a resposta ainda não chegou, então a interface comunica visualmente o estado de carregamento.
-- Dada uma falha de rede ou do serviço durante a consulta meteorológica, quando a falha é detectada, então a interface informa que os dados não puderam ser carregados e disponibiliza uma ação para tentar novamente.
-- Quando a pessoa aciona a nova tentativa, então uma nova consulta é realizada para a cidade selecionada.
-- Dada uma busca concluída sem correspondências, então a interface apresenta o estado sem resultados, distinto do estado de erro.
+- **Cenário RF5.1 — Busca ou consulta em andamento**
+	- **Given** uma requisição de busca ou de dados meteorológicos foi iniciada e ainda não recebeu resposta
+	- **When** a interface aguarda a resposta
+	- **Then** a interface exibe um indicador de carregamento
+- **Cenário RF5.2 — Falha na consulta meteorológica**
+	- **Given** uma consulta meteorológica está em andamento para uma cidade selecionada
+	- **When** a rede ou o serviço retorna uma falha
+	- **Then** a interface informa que os dados não puderam ser carregados e exibe uma ação para tentar novamente
+- **Cenário RF5.3 — Tentar novamente**
+	- **Given** a interface exibe uma falha para a cidade selecionada
+	- **When** a pessoa aciona a ação de nova tentativa
+	- **Then** uma nova requisição meteorológica é enviada para a localização da cidade selecionada
+- **Cenário RF5.4 — Sem resultados não é erro**
+	- **Given** a requisição de busca termina com sucesso e retorna uma lista vazia
+	- **When** a interface apresenta o resultado
+	- **Then** é exibido o estado sem resultados, sem a mensagem ou ação de erro de consulta meteorológica
 
 **RF6 — Referência temporal**
 
-- Dada uma resposta meteorológica com referência temporal, quando as condições atuais são exibidas, então a data e o horário de referência são apresentados junto aos dados e associados à cidade consultada.
-- Dada uma referência temporal ausente, quando os dados são exibidos, então a interface não inventa um horário de atualização.
+- **Cenário RF6.1 — Exibir referência temporal**
+	- **Given** a resposta meteorológica inclui uma data e um horário de referência
+	- **When** as condições atuais são exibidas
+	- **Then** a interface apresenta a data e o horário retornados junto às condições atuais da cidade consultada
+- **Cenário RF6.2 — Referência temporal ausente**
+	- **Given** a resposta meteorológica não inclui data ou horário de referência
+	- **When** as condições atuais são exibidas
+	- **Then** a interface não apresenta uma data ou horário de atualização inventado
 
 ## Non-Functional Requirements
 
