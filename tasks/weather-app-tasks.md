@@ -254,14 +254,16 @@ Backlog derivado de `plans/weather-app-plan.md` e rastreado à spec. A ordem das
 - **Arquivos prováveis:** `tests/unit/App.test.tsx`.
 - **Tipo:** Test.
 
-### T-25 — Testar E2E de busca e seleção
-- **Descrição:** validar submissão, resultado vazio e seleção única/múltipla.
+### T-25 — Testar E2E do fluxo principal em desktop e mobile
+- **Descrição:** validar a jornada completa de busca até a previsão, incluindo alternância de unidade e viewport mobile.
 - **Critérios de aceite:**
-  - Com fixtures, cenário de zero resultados exibe empty; um seleciona automaticamente; múltiplos aguardam seleção.
-  - Nenhum cenário envia forecast antes da seleção necessária.
+  - Com fixture de resultado único, a pessoa busca uma cidade e a UI exibe condições atuais e cinco dias da previsão.
+  - A mesma jornada passa em desktop e em viewport mobile de `375 × 812` px.
+  - Com múltiplos resultados, selecionar uma cidade consulta forecast apenas para a selecionada; zero resultados exibe empty.
+  - Alternar para Fahrenheit atualiza as temperaturas sem uma nova chamada de forecast.
   - O teste não faz chamadas à Open-Meteo.
-- **Dependências:** T-15, T-18, T-20, T-24.
-- **Arquivos prováveis:** `tests/e2e/weather-search.spec.ts`.
+- **Dependências:** T-15, T-18, T-20, T-22, T-23, T-24.
+- **Arquivos prováveis:** `tests/e2e/weather-main-flow.spec.ts`.
 - **Tipo:** Test.
 
 ### T-26 — Testar E2E de forecast e unidade
@@ -421,7 +423,7 @@ Backlog derivado de `plans/weather-app-plan.md` e rastreado à spec. A ordem das
 | T-22 | RF2, RF3, RF6; RF2.1–RF2.2, RF3.1–RF3.3, RF6.2–RF6.3 |
 | T-23 | RF4; RF4.1–RF4.4; RNF3 |
 | T-24 | RF1, RF4, RF5; RF1.6, RF5.1–RF5.5; RNF1, RNF3, RNF9 |
-| T-25 | RF1, RF2, RF3, RF4, RF5; E2E RF1.3, RF1.8–RF1.9, RF2.3, RF3.1, RF4.3; RNF9 |
+| T-25 | RF1–RF4; RF1.2–RF1.3, RF1.8–RF1.9, RF2.1, RF3.1, RF4.3; RNF1, RNF3, RNF9 |
 | T-26 | RF2, RF3, RF4; RF2.1–RF2.2, RF3.1–RF3.3, RF4.3; RNF3 |
 | T-27 | RF5; RF5.2–RF5.5; RNF6 |
 | T-28 | RNF1 |
