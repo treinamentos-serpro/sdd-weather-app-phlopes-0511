@@ -11,17 +11,21 @@ O briefing não define público-alvo, plataforma além do requisito de uso móve
 - **RF1 — Busca de cidades:** permitir que o usuário pesquise cidades para consultar seus dados meteorológicos.
 - **RF2 — Clima atual:** exibir as condições meteorológicas atuais da cidade selecionada.
 - **RF3 — Previsão de cinco dias:** exibir a previsão do tempo para cinco dias da cidade selecionada.
-- **RF4 — Alternância de unidade:** permitir alternar entre Celsius e Fahrenheit para a temperatura exibida.
-- **RF5 — Uso em dispositivos móveis:** disponibilizar as funcionalidades de busca, consulta e alternância de unidade em dispositivos móveis.
+- **RF4 — Alternância de unidade:** permitir alternar entre Celsius e Fahrenheit e atualizar os valores de temperatura e seus rótulos nas informações exibidas.
+- **RF5 — Contexto temporal:** exibir a data e o horário de referência dos dados meteorológicos apresentados.
 
 ## Requisitos Não-Funcionais
 
-- **RNF1 — Responsividade:** a interface deve se adaptar a telas móveis e permitir a utilização das funcionalidades principais nesses dispositivos.
-- **RNF2 — Usabilidade:** a busca por cidade e a leitura do clima atual e da previsão devem ser claras e diretas.
-- **RNF3 — Consistência:** ao alternar entre Celsius e Fahrenheit, os valores de temperatura apresentados devem permanecer consistentes com a unidade selecionada.
-- **RNF4 — Confiabilidade dos dados:** as informações meteorológicas apresentadas devem vir de uma fonte de dados definida e ser identificadas com contexto temporal apropriado.
+- **RNF1 — Responsividade:** permitir os fluxos principais em larguras de tela a partir de 320 px até desktop, sem rolagem horizontal ou perda de funcionalidade.
+- **RNF2 — Usabilidade:** busca, clima atual e previsão devem ser compreensíveis e diretos; validar os fluxos principais em teste de usabilidade.
+- **RNF3 — Consistência de unidades:** todos os valores de temperatura exibidos devem corresponder à unidade selecionada, sem misturar Celsius e Fahrenheit.
+- **RNF4 — Performance:** em condições de rede acordadas, apresentar os resultados de busca e os dados meteorológicos em até 3 segundos no percentil 95.
+- **RNF5 — Acessibilidade:** atender WCAG 2.2 nível AA nos fluxos principais, incluindo operação por teclado, foco visível, nomes acessíveis e contraste adequado.
+- **RNF6 — Disponibilidade e resiliência:** buscar disponibilidade mensal de 99,5% para a consulta meteorológica; em falha da fonte externa, apresentar estado de erro compreensível e permitir nova tentativa.
+- **RNF7 — Compatibilidade:** suportar as versões atuais e imediatamente anteriores dos navegadores desktop e móveis que forem definidos para o produto.
+- **RNF8 — Atualidade dos dados:** utilizar dados dentro de um limite máximo de idade a ser acordado com o negócio; informar o horário de referência e sinalizar dados indisponíveis ou antigos.
 
-Os níveis de desempenho, disponibilidade, acessibilidade e suporte a navegadores ainda não foram especificados e devem ser acordados antes de se tornarem critérios mensuráveis.
+As metas quantitativas acima são propostas iniciais para tornar os requisitos verificáveis e precisam ser validadas antes de se tornarem compromissos do produto. A fonte meteorológica ainda precisa ser escolhida, incluindo seus limites de uso, disponibilidade e atualização.
 
 ## Riscos
 
@@ -41,8 +45,8 @@ Os níveis de desempenho, disponibilidade, acessibilidade e suporte a navegadore
 4. Os cinco dias incluem o dia atual ou correspondem aos cinco dias seguintes? A previsão deve ser diária ou horária?
 5. Qual deve ser a unidade inicial e a seleção deve ser mantida entre visitas ou sessões?
 6. A aplicação deve inferir a localização do usuário, ou a consulta começa somente após uma busca explícita?
-7. Quais idiomas, navegadores e larguras de tela precisam ser suportados?
-8. Existem metas de desempenho, disponibilidade ou acessibilidade que devam ser verificadas?
+7. Quais idiomas e navegadores devem ser suportados? As metas propostas de responsividade, desempenho, disponibilidade e acessibilidade são adequadas?
+8. Qual é a idade máxima aceitável para os dados meteorológicos e como deve ser definida a disponibilidade considerando falhas do provedor externo?
 9. É necessário oferecer favoritos, histórico de buscas, uso sem conexão ou outros recursos além dos descritos no briefing?
 
 ## Suposições
